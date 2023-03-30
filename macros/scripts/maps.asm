@@ -102,7 +102,7 @@ MACRO def_object_events
 	DEF {_NUM_OBJECT_EVENTS} = 0
 ENDM
 
-MACRO object_event
+MACRO object_event ; this needs to be rewritten to handle the new object format
 ;\1: x: left to right, starts at 0
 ;\2: y: top to bottom, starts at 0
 ;\3: sprite: a SPRITE_* constant
@@ -119,7 +119,10 @@ MACRO object_event
 ;\<11>: sight range: applies to OBJECTTYPE_TRAINER
 ;\<12>: script pointer
 ;\<13>: event flag: an EVENT_* constant, or -1 to always appear
-	db \3, \2 + 4, \1 + 4, \4
+	db \3
+	dw \2
+	dw \1
+	db \4
 	dn \6, \5
 	db \7, \8
 	dn \9, \<10>

@@ -210,13 +210,13 @@ SpriteMovementData::
 	db 0 ; flags2
 	db STRENGTH_BOULDER ; palette flags
 
-; SPRITEMOVEDATA_FOLLOWNOTEXACT
-	db SPRITEMOVEFN_FOLLOWNOTEXACT ; movement function
-	db DOWN ; facing
-	db OBJECT_ACTION_STAND ; action
-	db WONT_DELETE ; flags1
-	db 0 ; flags2
-	db 0 ; palette flags
+; unused
+	db SPRITEMOVEFN_UNUSED
+	db 0
+	db 0
+	db 0
+	db 0
+	db 0
 
 ; SPRITEMOVEDATA_SHADOW
 	db SPRITEMOVEFN_SHADOW ; movement function
@@ -297,6 +297,7 @@ SpriteMovementData::
 	db 0 ; flags1
 	db 0 ; flags2
 	db SWIMMING ; palette flags
+
 
 	assert_table_length NUM_SPRITEMOVEDATA
 

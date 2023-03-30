@@ -402,7 +402,7 @@ If <code><i>item_id</i></code> = `USE_SCRIPT_VAR`, then it uses `[wScriptVar]` i
 ## `$76`: <code>turnobject <i>object_id</i>, <i>facing</i></code>
 
 
-## `$77`: <code>follownotexact <i>object2</i>, <i>object1</i></code>
+## `$77`: <code>unused1</code>
 
 
 ## `$78`: <code>earthquake <i>param</i></code>

@@ -1,12 +1,5 @@
 ; Functions dealing with rendering and interacting with maps.
 
-ClearUnusedMapBuffer::
-	ld hl, wUnusedMapBuffer
-	ld bc, wUnusedMapBufferEnd - wUnusedMapBuffer
-	ld a, 0
-	call ByteFill
-	ret
-
 CheckScenes::
 ; Checks wCurMapSceneScriptPointer.  If it's empty, returns -1 in a.  Otherwise, returns the active scene ID in a.
 	push hl
@@ -97,257 +90,241 @@ OverworldTextModeSwitch::
 	ret
 
 LoadMapPart::
+	call GetScreenCoordinates
+	call LoadMetatiles
+	ret
+
+GetScreenCoordinates:: ; Gets the coordinates of the top left 16*16 tile of the screen within the tilemap
+	ld a, [wXCoord + 1] ; only need the low byte of the x coord for now
+	sub a, $04
+	and a, $3F ; wOverworldMapBlocks buffer is 64 tiles wide and heigh
+	ld [wScreenXCoord], a ; X coordinate within the map buffer
+	ld a, [wYCoord + 1] ; only load the low byte for now
+	sub a, $04
+	and a, $3F
+	ld [wScreenYCoord], a ; Y Coordinate within the map buffer
+
+	ld a, [wPlayerWalking] ; checking if the player is actually walking or not. fixes bugs related to calling LoadMetatiles at odd times
+	inc a
+	ret z
+
+	ld a, [wPlayerStepDirection] ; Player coordinates aren't updated until after tiles are loaded
+	
+	and a
+	jr z, .Down ; this isn't correctly adjusting the screen position for movement
+	cp a, $01
+	jr z, .Up
+	cp a, $02
+	jr z, .Left
+	cp a, $03
+	jr z, .Right
+	ret ; Should never be reached unless this function gets called while the player isn't moving
+
+.Up:
+	ld a, [wScreenYCoord]
+	dec a
+	jr .finishY
+.Down:
+	ld a, [wScreenYCoord]
+	inc a
+.finishY
+	and a, $3F
+	ld [wScreenYCoord], a
+	ret
+.Left:
+	ld a, [wScreenXCoord]
+	dec a
+	jr .finishX
+.Right:
+	ld a, [wScreenXCoord]
+	inc a
+.finishX
+	and a, $3F
+	ld [wScreenXCoord], a
+	ret
+
+LoadMetatiles:: ; This is kind of a mess but it actually works surprisingly well... unless the game gets paused while the player is moving
 	ldh a, [hROMBank]
 	push af
-
 	ld a, [wTilesetBlocksBank]
 	rst Bankswitch
-	call LoadMetatiles
+	; Player is 4 16 x 16px tiles right and down of the left edge of the screen.
+	; If player coordinates are odd, the metatile is half cut off
+	xor a
+	ld [wTilemapCopyX], a
+	ld [wTilemapCopyY], a
 
-	ld a, "■"
-	hlcoord 0, 0
-	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
-	call ByteFill
+	ld a, [wScreenXCoord]
+	ld b, a
+	ld a, [wScreenYCoord]
+	ld c, a
 
-	ld a, BANK(_LoadMapPart)
-	rst Bankswitch
-	call _LoadMapPart
+	ld e, b
+	srl e
+	ld d, c
+	srl d ; e, d is the coordinates within wOverworldMapBlocks that we need
+	ld a, e
+	ld [wBlockX], a
+	ld a, d
+	ld [wBlockY], a
 
+	ld hl, wTilemap
+
+	ld a, b
+	and a, $01 ; Clear out all of b except for bit 1, to indicate parity
+	ld b, a
+	ld a, c
+	and a, $01 ; same with c
+	ld c, a
+
+.loop
+	push hl ; hl contains the counter for how much data we've copied
+	ld a, [wBlockX]
+	ld e, a
+	ld a, [wBlockY]
+	ld d, a
+	srl d 		   ; this is evil bit hacking, but it's much more efficient than actually multiplying
+	jr nc, .shift1 ; this shit only works becuase wOverworldMapBlocks is square and has power of 2 dimensions
+	set $05, e     ; this makes me cry on the inside. Too bad!
+.shift1:
+	srl d
+	jr nc, .shift2
+	set $06, e
+.shift2:
+	srl d
+	jr nc, .shift3
+	set $07, e
+.shift3: ; de should now have our offset within wOverworldMapBlocks
+	ld hl, wOverworldMapBlocks
+	add hl, de ; hl now has the address of the block we need
+	ld d, $00
+	ld e, [hl] ; e has the block id
+	sla e ; x2
+	rl d
+	sla e ; x4
+	rl d
+	sla e ; x8
+	rl d
+	sla e ; x16
+	rl d
+	ld a, [wTilesetBlocksAddress] ; we should already be in the right bank, so we only need to worry about the address
+	ld l, a
+	ld a, [wTilesetBlocksAddress + 1]
+	ld h, a
+	add hl, de
+	ld d, h ; de should now have the address of the block we need within the tileset
+	ld e, l
+	pop hl
+
+	bit $00, b
+	jr nz, .rightSide
+.leftSide:
+	bit $00, c
+	jr nz, .bottomLeft
+.topLeft:
+	ld a, [de] ; copy two 8x8 tiles
+	ld [hli], a
+	inc de
+	ld a, [de]
+	ld [hl], a
+	push hl ; save hl so i don't have to do 16 bit subtraction bc ugggggh
+
+	ld a, SCREEN_WIDTH - 1; god i hate doing 16 bit math manually, but it's a cycle faster than using the stack to do it
+	add a, l
+	ld l, a
+	ld a, h
+	adc a, $00
+	ld h, a
+
+	inc de ; effectively add 3 to de but without having to do actual math, horray!
+	inc de
+	inc de
+
+	ld a, [de] ; copy two more 8x8 tiles
+	ld [hli], a
+	inc de
+	ld a, [de]
+	ld [hl], a
+
+	pop hl ; restore hl 
+	inc hl
+	jr .tileDone
+.bottomLeft:
+	ld a, $08 ; the only difference between topLeft and the goal of the other copy functions is which tiles are copied from the tileset. they all get copied to the same place regardless
+	add a, e
+	ld e, a
+	ld a, d
+	adc a, $00
+	ld d, a
+	jr .topLeft
+
+.rightSide:
+	bit $00, c
+	jr nz, .bottomRight
+.topRight:
+	inc de
+	inc de
+	jr .topLeft
+.bottomRight:
+	inc de
+	inc de
+	jr .bottomLeft
+
+.tileDone: 
+	inc b ; if b is even after this instruction we have moved to a new map block
+	bit $00, b
+	jr nz, .sameBlockX
+	ld a, [wBlockX]
+	inc a
+	and a, $1F ; and a with 31 to ensure x wraps around properly
+	ld [wBlockX], a
+.sameBlockX:
+	ld a, [wTilemapCopyX]
+	inc a
+	ld [wTilemapCopyX], a
+	cp a, SCREEN_WIDTH / 2
+	jr z, .newRow
+	jp .loop
+.newRow:
+	ld de, SCREEN_WIDTH ; move hl to the next row
+	add hl, de
+
+	inc c
+	bit $00, c
+	jr nz, .sameBlockY
+	ld a, [wBlockY]
+	inc a
+	and a, $1F ; and a with 31 to make sure y wraps around properly
+	ld [wBlockY], a
+.sameBlockY:
+
+	ld a, [wScreenXCoord] ; reset blockX
+	srl a; divide ScreenXCoord by two to get BlockX
+	ld [wBlockX], a
+
+	xor a
+	ld [wTilemapCopyX], a
+	ld a, [wTilemapCopyY]
+	inc a
+	ld [wTilemapCopyY], a
+	cp a, SCREEN_HEIGHT / 2
+	jp nz, .loop
+
+.done:
 	pop af
 	rst Bankswitch
 	ret
 
-LoadMetatiles::
-	; de <- wOverworldMapAnchor
-	ld a, [wOverworldMapAnchor]
-	ld e, a
-	ld a, [wOverworldMapAnchor + 1]
-	ld d, a
-	ld hl, wSurroundingTiles
-	ld b, SCREEN_META_HEIGHT
-
-.row
-	push de
-	push hl
-	ld c, SCREEN_META_WIDTH
-
-.col
-	push de
-	push hl
-	; Load the current map block.
-	; If the current map block is a border block, load the border block.
-	ld a, [de]
-	and a
-	jr nz, .ok
-	ld a, [wMapBorderBlock]
-
-.ok
-	; Load the current wSurroundingTiles address into de.
-	ld e, l
-	ld d, h
-	; Set hl to the address of the current metatile data ([wTilesetBlocksAddress] + (a) tiles).
-; BUG: LoadMetatiles wraps around past 128 blocks (see docs/bugs_and_glitches.md)
-	add a
-	ld l, a
-	ld h, 0
-	add hl, hl
-	add hl, hl
-	add hl, hl
-	ld a, [wTilesetBlocksAddress]
-	add l
-	ld l, a
-	ld a, [wTilesetBlocksAddress + 1]
-	adc h
-	ld h, a
-
-	; copy the 4x4 metatile
-rept METATILE_WIDTH - 1
-rept METATILE_WIDTH
-	ld a, [hli]
-	ld [de], a
-	inc de
-endr
-	ld a, e
-	add SURROUNDING_WIDTH - METATILE_WIDTH
-	ld e, a
-	jr nc, .next\@
-	inc d
-.next\@
-endr
-rept METATILE_WIDTH
-	ld a, [hli]
-	ld [de], a
-	inc de
-endr
-	; Next metatile
-	pop hl
-	ld de, METATILE_WIDTH
-	add hl, de
-	pop de
-	inc de
-	dec c
-	jp nz, .col
-	; Next metarow
-	pop hl
-	ld de, SURROUNDING_WIDTH * METATILE_WIDTH
-	add hl, de
-	pop de
-	ld a, [wMapWidth]
-	add MAP_CONNECTION_PADDING_WIDTH * 2
-	add e
-	ld e, a
-	jr nc, .ok2
-	inc d
-.ok2
-	dec b
-	jp nz, .row
-	ret
-
 ReturnToMapFromSubmenu::
+	push hl
+	;ld hl, wTempBlocksAddress
+	inc [hl]
+	pop hl
 	ld a, MAPSETUP_SUBMENU
 	ldh [hMapEntryMethod], a
 	farcall RunMapSetupScript
 	xor a
 	ldh [hMapEntryMethod], a
-	ret
-
-CheckWarpTile::
-	call GetDestinationWarpNumber
-	ret nc
-
-	push bc
-	farcall CheckDirectionalWarp
-	pop bc
-	ret nc
-
-	call CopyWarpData
-	scf
-	ret
-
-WarpCheck::
-	call GetDestinationWarpNumber
-	ret nc
-	call CopyWarpData
-	ret
-
-GetDestinationWarpNumber::
-	farcall CheckWarpCollision
-	ret nc
-
-	ldh a, [hROMBank]
-	push af
-
-	call SwitchToMapScriptsBank
-	call .GetDestinationWarpNumber
-
-	pop de
-	ld a, d
-	rst Bankswitch
-	ret
-
-.GetDestinationWarpNumber:
-	ld a, [wPlayerMapY]
-	sub 4
-	ld e, a
-	ld a, [wPlayerMapX]
-	sub 4
-	ld d, a
-	ld a, [wCurMapWarpCount]
-	and a
-	ret z
-
-	ld c, a
-	ld hl, wCurMapWarpsPointer
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-.loop
-	push hl
-	ld a, [hli]
-	cp e
-	jr nz, .next
-	ld a, [hli]
-	cp d
-	jr nz, .next
-	jr .found_warp
-
-.next
-	pop hl
-	ld a, WARP_EVENT_SIZE
-	add l
-	ld l, a
-	jr nc, .okay
-	inc h
-
-.okay
-	dec c
-	jr nz, .loop
-	xor a
-	ret
-
-.found_warp
-	pop hl
-	call .IncreaseHLTwice
-	ret nc ; never encountered
-
-	ld a, [wCurMapWarpCount]
-	inc a
-	sub c
-	ld c, a
-	scf
-	ret
-
-.IncreaseHLTwice:
-	inc hl
-	inc hl
-	scf
-	ret
-
-CopyWarpData::
-	ldh a, [hROMBank]
-	push af
-
-	call SwitchToMapScriptsBank
-	call .CopyWarpData
-
-	pop af
-	rst Bankswitch
-	scf
-	ret
-
-.CopyWarpData:
-	push bc
-	ld hl, wCurMapWarpsPointer
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	ld a, c
-	dec a
-	ld bc, WARP_EVENT_SIZE
-	call AddNTimes
-	ld bc, 2 ; warp number
-	add hl, bc
-	ld a, [hli]
-	cp -1
-	jr nz, .skip
-	ld hl, wBackupWarpNumber
-	ld a, [hli]
-
-.skip
-	pop bc
-	ld [wNextWarp], a
-	ld a, [hli]
-	ld [wNextMapGroup], a
-	ld a, [hli]
-	ld [wNextMapNumber], a
-
-	ld a, c
-	ld [wPrevWarp], a
-	ld a, [wMapGroup]
-	ld [wPrevMapGroup], a
-	ld a, [wMapNumber]
-	ld [wPrevMapNumber], a
-	scf
 	ret
 
 CheckOutdoorMap::
@@ -366,38 +343,6 @@ CheckIndoorMap::
 	cp GATE
 	ret
 
-CheckUnknownMap:: ; unreferenced
-	cp INDOOR
-	ret z
-	cp GATE
-	ret z
-	cp ENVIRONMENT_5
-	ret
-
-LoadMapAttributes::
-	call CopyMapPartialAndAttributes
-	call SwitchToMapScriptsBank
-	call ReadMapScripts
-	xor a ; do not skip object events
-	call ReadMapEvents
-	ret
-
-LoadMapAttributes_SkipObjects::
-	call CopyMapPartialAndAttributes
-	call SwitchToMapScriptsBank
-	call ReadMapScripts
-	ld a, TRUE ; skip object events
-	call ReadMapEvents
-	ret
-
-CopyMapPartialAndAttributes::
-	call CopyMapPartial
-	call SwitchToMapAttributesBank
-	call GetMapAttributesPointer
-	call CopyMapAttributes
-	call GetMapConnections
-	ret
-
 ReadMapEvents::
 	push af
 	ld hl, wMapEventsPointer
@@ -406,7 +351,6 @@ ReadMapEvents::
 	ld l, a
 	inc hl
 	inc hl
-	call ReadWarps
 	call ReadCoordEvents
 	call ReadBGEvents
 
@@ -415,15 +359,6 @@ ReadMapEvents::
 	ret nz
 
 	call ReadObjectEvents
-	ret
-
-ReadMapScripts::
-	ld hl, wMapScriptsPointer
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	call ReadMapSceneScripts
-	call ReadMapCallbacks
 	ret
 
 CopyMapAttributes::
@@ -435,100 +370,6 @@ CopyMapAttributes::
 	inc de
 	dec c
 	jr nz, .loop
-	ret
-
-GetMapConnections::
-	ld a, $ff
-	ld [wNorthConnectedMapGroup], a
-	ld [wSouthConnectedMapGroup], a
-	ld [wWestConnectedMapGroup], a
-	ld [wEastConnectedMapGroup], a
-
-	ld a, [wMapConnections]
-	ld b, a
-
-	bit NORTH_F, b
-	jr z, .no_north
-	ld de, wNorthMapConnection
-	call GetMapConnection
-.no_north
-
-	bit SOUTH_F, b
-	jr z, .no_south
-	ld de, wSouthMapConnection
-	call GetMapConnection
-.no_south
-
-	bit WEST_F, b
-	jr z, .no_west
-	ld de, wWestMapConnection
-	call GetMapConnection
-.no_west
-
-	bit EAST_F, b
-	jr z, .no_east
-	ld de, wEastMapConnection
-	call GetMapConnection
-.no_east
-
-	ret
-
-GetMapConnection::
-; Load map connection struct at hl into de.
-	ld c, wSouthMapConnection - wNorthMapConnection
-.loop
-	ld a, [hli]
-	ld [de], a
-	inc de
-	dec c
-	jr nz, .loop
-	ret
-
-ReadMapSceneScripts::
-	ld a, [hli] ; scene_script count
-	ld c, a
-	ld [wCurMapSceneScriptCount], a
-	ld a, l
-	ld [wCurMapSceneScriptsPointer], a
-	ld a, h
-	ld [wCurMapSceneScriptsPointer + 1], a
-	ld a, c
-	and a
-	ret z
-
-	ld bc, SCENE_SCRIPT_SIZE
-	call AddNTimes
-	ret
-
-ReadMapCallbacks::
-	ld a, [hli]
-	ld c, a
-	ld [wCurMapCallbackCount], a
-	ld a, l
-	ld [wCurMapCallbacksPointer], a
-	ld a, h
-	ld [wCurMapCallbacksPointer + 1], a
-	ld a, c
-	and a
-	ret z
-
-	ld bc, CALLBACK_SIZE
-	call AddNTimes
-	ret
-
-ReadWarps::
-	ld a, [hli]
-	ld c, a
-	ld [wCurMapWarpCount], a
-	ld a, l
-	ld [wCurMapWarpsPointer], a
-	ld a, h
-	ld [wCurMapWarpsPointer + 1], a
-	ld a, c
-	and a
-	ret z
-	ld bc, WARP_EVENT_SIZE
-	call AddNTimes
 	ret
 
 ReadCoordEvents::
@@ -651,270 +492,189 @@ ClearObjectStructs::
 	jr nz, .loop
 	ret
 
-GetWarpDestCoords::
-	call GetMapScriptsBank
-	rst Bankswitch
+GetChunkCoords::
+	; Takes 16 bit x and y tile coordinates in bc and de and returns the chunk's x and y positions in wChunkX and wChunkY
+REPT 5
+	srl b ; Divide bc by 32
+	rr c
+ENDR
+REPT 5
+	srl d ; Divide de by 32
+	rr e
+ENDR
+	ld a, c
+	ld [wChunkX], a
+	ld a, e
+	ld [wChunkY], a
+	ret
 
-	ld hl, wMapEventsPointer
-	ld a, [hli]
-	ld h, [hl]
+
+GetChunkHeaderIndexInBank:: 
+	; Takes 8 bit chunk x and y coords in e and d respetively and returns the chunk header's 16 bit index number in hl
+	; Does not preserve a
+	xor a
+	ldh [hMultiplicand], a ; clear out hMultiplicand - this may not be strictly needed, but is good for safety
+	ldh [hMultiplicand + 1], a
+	ld a, d
+	ldh [hMultiplicand + 2], a ; multiplicand is loaded from d
+	ld a, MAP_CHUNK_WIDTH
+	ldh [hMultiplier], a
+	call Multiply
+	ldh a, [hProduct + 2] ; put high byte of product into h - this assumes the product fits within 16 bits, which it should unless I fucked up
+	ld h, a
+	ldh a, [hProduct + 3] ; put low byte of product into l
 	ld l, a
-rept 3 ; get to the warp coords
-	inc hl
-endr
-	ld a, [wWarpNumber]
-	dec a
-	ld c, a
-	ld b, 0
-	ld a, WARP_EVENT_SIZE
-	call AddNTimes
-	ld a, [hli]
-	ld [wYCoord], a
-	ld a, [hli]
-	ld [wXCoord], a
-	; destination warp number
-	ld a, [hli]
-	cp -1
-	jr nz, .skip
-	call .backup
-
-.skip
-	farcall GetMapScreenCoords
+	ld d, $00
+	add hl, de ; add the low byte to get the final number
 	ret
 
-.backup
-	ld a, [wPrevWarp]
-	ld [wBackupWarpNumber], a
-	ld a, [wPrevMapGroup]
-	ld [wBackupMapGroup], a
-	ld a, [wPrevMapNumber]
-	ld [wBackupMapNumber], a
-	ret
-
-LoadBlockData::
-	ld hl, wOverworldMapBlocks
-	ld bc, wOverworldMapBlocksEnd - wOverworldMapBlocks
-	ld a, 0
-	call ByteFill
-	call ChangeMap
-	call FillMapConnections
-	ld a, MAPCALLBACK_TILES
-	call RunMapCallback
-	ret
-
-ChangeMap::
-	ldh a, [hROMBank]
-	push af
-
-	ld hl, wOverworldMapBlocks
-	ld a, [wMapWidth]
-	ldh [hConnectedMapWidth], a
-	add $6
-	ldh [hConnectionStripLength], a
-	ld c, a
-	ld b, 0
-	add hl, bc
-	add hl, bc
-	add hl, bc
-	ld c, 3
-	add hl, bc
-	ld a, [wMapBlocksBank]
-	rst Bankswitch
-
-	ld a, [wMapBlocksPointer]
+CopyChunkHeader::
+	ld a, [wChunkY]
+	ld c, NUM_CHUNK_HEADERS_ROWS_IN_BANK
+	call SimpleDivide ; Header bank number is in b, remainder is in a
+	ld d, a; Put remainder (aka chunk y pos within the bank) into d
+	set $7, b ; This assumes chunk headers start at bank $80
+	ld a, [wChunkX] ; Put chunk x coord into e
 	ld e, a
-	ld a, [wMapBlocksPointer + 1]
-	ld d, a
-	ld a, [wMapHeight]
-	ld b, a
-.row
-	push hl
-	ldh a, [hConnectedMapWidth]
-	ld c, a
-.col
-	ld a, [de]
-	inc de
-	ld [hli], a
-	dec c
-	jr nz, .col
-	pop hl
-	ldh a, [hConnectionStripLength]
-	add l
-	ld l, a
-	jr nc, .okay
-	inc h
-.okay
-	dec b
-	jr nz, .row
+	call GetChunkHeaderIndexInBank ; hl now has the index of the chunk header in it's respective bank
+REPT CHUNK_HEADER_SIZE_LOG2
+	sla l
+	rl h
+ENDR
+    set 6, h ; effectively add $4000 to h
+	ldh a, [hROMBank] ; Save current bank to switch back to later
+	push af
+	ld a, b
+	rst Bankswitch ; Switch to the bank with the correct chunk header
+	
+	ld de, wChunkHeader
+	ld bc, CHUNK_HEADER_SIZE
+	call CopyBytes ; Chunk header is now copied to work ram
 
 	pop af
 	rst Bankswitch
 	ret
 
-FillMapConnections::
-; North
-	ld a, [wNorthConnectedMapGroup]
-	cp $ff
-	jr z, .South
-	ld b, a
-	ld a, [wNorthConnectedMapNumber]
-	ld c, a
-	call GetAnyMapBlocksBank
+LoadChunkToMapBuffer::
+	; Loads a 16 * 16 metatile chunk to the map block buffer
+	; Chunk coordinates should be specified as 8 bit x and y in wChunkX and wChunkY respecitvely
+	; Quadrant chunk needs to go into should be specified as the lower 2 bits of wChunkQuadrant - 00 is top left, 01 is top right, 10 is bottom left, 11 is bottom right
+	ldh a, [hROMBank]
+	push af
+	ld a, [wChunkHeader + CHARBLOCK_BANK]; Get charblock bank
+	or a, $C0 ; force chunk bank to be at least $C0 to prevent bad bank switches when loading uninitialized chunks
+	rst Bankswitch
 
-	ld a, [wNorthConnectionStripPointer]
-	ld l, a
-	ld a, [wNorthConnectionStripPointer + 1]
-	ld h, a
-	ld a, [wNorthConnectionStripLocation]
-	ld e, a
-	ld a, [wNorthConnectionStripLocation + 1]
-	ld d, a
-	ld a, [wNorthConnectionStripLength]
-	ldh [hConnectionStripLength], a
-	ld a, [wNorthConnectedMapWidth]
-	ldh [hConnectedMapWidth], a
-	call FillNorthConnectionStrip
-
-.South:
-	ld a, [wSouthConnectedMapGroup]
-	cp $ff
-	jr z, .West
-	ld b, a
-	ld a, [wSouthConnectedMapNumber]
-	ld c, a
-	call GetAnyMapBlocksBank
-
-	ld a, [wSouthConnectionStripPointer]
-	ld l, a
-	ld a, [wSouthConnectionStripPointer + 1]
-	ld h, a
-	ld a, [wSouthConnectionStripLocation]
-	ld e, a
-	ld a, [wSouthConnectionStripLocation + 1]
-	ld d, a
-	ld a, [wSouthConnectionStripLength]
-	ldh [hConnectionStripLength], a
-	ld a, [wSouthConnectedMapWidth]
-	ldh [hConnectedMapWidth], a
-	call FillSouthConnectionStrip
-
-.West:
-	ld a, [wWestConnectedMapGroup]
-	cp $ff
-	jr z, .East
-	ld b, a
-	ld a, [wWestConnectedMapNumber]
-	ld c, a
-	call GetAnyMapBlocksBank
-
-	ld a, [wWestConnectionStripPointer]
-	ld l, a
-	ld a, [wWestConnectionStripPointer + 1]
-	ld h, a
-	ld a, [wWestConnectionStripLocation]
-	ld e, a
-	ld a, [wWestConnectionStripLocation + 1]
-	ld d, a
-	ld a, [wWestConnectionStripLength]
-	ld b, a
-	ld a, [wWestConnectedMapWidth]
-	ldh [hConnectionStripLength], a
-	call FillWestConnectionStrip
-
-.East:
-	ld a, [wEastConnectedMapGroup]
-	cp $ff
-	jr z, .Done
-	ld b, a
-	ld a, [wEastConnectedMapNumber]
-	ld c, a
-	call GetAnyMapBlocksBank
-
-	ld a, [wEastConnectionStripPointer]
-	ld l, a
-	ld a, [wEastConnectionStripPointer + 1]
-	ld h, a
-	ld a, [wEastConnectionStripLocation]
-	ld e, a
-	ld a, [wEastConnectionStripLocation + 1]
-	ld d, a
-	ld a, [wEastConnectionStripLength]
-	ld b, a
-	ld a, [wEastConnectedMapWidth]
-	ldh [hConnectionStripLength], a
-	call FillEastConnectionStrip
-
-.Done:
-	ret
-
-FillNorthConnectionStrip::
-FillSouthConnectionStrip::
-	ld c, 3
-.y
-	push de
-
-	push hl
-	ldh a, [hConnectionStripLength]
-	ld b, a
-.x
-	ld a, [hli]
-	ld [de], a
-	inc de
-	dec b
-	jr nz, .x
-	pop hl
-
-	ldh a, [hConnectedMapWidth]
-	ld e, a
-	ld d, 0
+	ld d, $00
+	ld e, $00
+	ld a, [wChunkQuadrant]
+	rrca ; Put bit 0 of b into the carry
+	jr nc, .left
+	ld e, $10 ; 
+.left:	
+	rrca ; Put bit 1 of b into the carry
+	jr nc, .top
+	ld d, $02
+.top ; de now has the offset within wOverworldMapBlocks
+	ld hl, wOverworldMapBlocks
 	add hl, de
-	pop de
+	ld d, h
+	ld e, l
+	ld a, [wChunkHeader + CHARBLOCK_POINTER_IN_BANK]
+	ld h, a
+	ld a, [wChunkHeader + CHARBLOCK_POINTER_IN_BANK + 1]
+	ld l, a
+	set 6, h
+	; cp a, $00 ; TODO: this is fucking dumb. Too bad!
+	;call z, DecompressAndCopy1bpc
+	; cp a, $01
+	;call z, DecompressAndCopy2bpc
+	; cp a, $02
+	;call z, DecompressAndCopy4bpc
+	; cp a, $03
+	call DecompressAndCopy8bpc
 
-	ld a, [wMapWidth]
-	add 6
-	add e
+
+	ld hl, wChunkCoordsArray ; put the coordinates of the chunk we just loaded into the chunk coords array to prevent unnecessary loading
+	ld a, [wChunkQuadrant]
+	rlca
 	ld e, a
-	jr nc, .okay
-	inc d
-.okay
-	dec c
-	jr nz, .y
+	ld d, $00
+	add hl, de
+	ld a, [wChunkX]
+	ld [hli], a
+	ld a, [wChunkY]
+	ld [hl], a
+
+	pop af
+	rst Bankswitch
 	ret
 
-FillWestConnectionStrip::
-FillEastConnectionStrip::
+DecompressAndCopy8bpc::
+	; "Decompresses" and copies the 8 bit per charblock chunk in the current bank at de to hl, taking into account the block size
+	ld a, $10
+	ld [wScratchByte], a
 .loop
-	ld a, [wMapWidth]
-	add 6
-	ldh [hConnectedMapWidth], a
-
-	push de
-
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	
+	ld a, $10 ; 16 bit adding $0010 to de
+	add a, e  ; This isn't particularly efficient, too bad!
+	ld e, a	  
+	ld a, $00
+	adc a, d
+	ld d, a
+	
 	push hl
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
+	ld hl, wScratchByte
+	dec [hl]
 	pop hl
-
-	ldh a, [hConnectionStripLength]
-	ld e, a
-	ld d, 0
-	add hl, de
-	pop de
-
-	ldh a, [hConnectedMapWidth]
-	add e
-	ld e, a
-	jr nc, .okay
-	inc d
-.okay
-	dec b
 	jr nz, .loop
 	ret
 
@@ -939,26 +699,28 @@ CallScript::
 
 CallMapScript::
 ; Call a script at hl in the current bank if there isn't already a script running
-	ld a, [wScriptRunning]
+	ld a, $00 ; [wScriptRunning]
 	and a
 	ret nz
-	call GetMapScriptsBank
-	jr CallScript
+	; call GetMapScriptsBank
+	; jr CallScript
 
 RunMapCallback::
 ; Will run the first callback found with execution index equal to a.
 	ld b, a
 	ldh a, [hROMBank]
 	push af
-	call SwitchToMapScriptsBank
-	call .FindCallback
+	; call SwitchToMapScriptsBank ; Dummy this shit out. I'm not even fully sure what this function does, but it probably has to do with the fucking script system
+	; call .FindCallback
+	scf 
+	ccf
 	jr nc, .done
 
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	ld b, a
 	ld d, h
 	ld e, l
-	call ExecuteCallbackScript
+	; call ExecuteCallbackScript
 
 .done
 	pop af
@@ -1393,7 +1155,7 @@ LoadTilesetGFX::
 	ldh [hTileAnimFrame], a
 	ret
 
-BufferScreen::
+BufferScreen:: ; God I wish this shit was documented
 	ld hl, wOverworldMapAnchor
 	ld a, [hli]
 	ld h, [hl]
@@ -1511,12 +1273,14 @@ SaveScreen_LoadConnection::
 GetMovementPermissions::
 	xor a
 	ld [wTilePermissions], a
-	call .LeftRight
-	call .UpDown
+	; call .LeftRight
+	; call .UpDown
 ; get coords of current tile
-	ld a, [wPlayerMapX]
+	ld a, [wXCoord + 1]
+	and a, $3F
 	ld d, a
-	ld a, [wPlayerMapY]
+	ld a, [wYCoord + 1]
+	and a, $3F
 	ld e, a
 	call GetCoordTile
 	ld [wPlayerTile], a
@@ -1548,9 +1312,11 @@ GetMovementPermissions::
 	db UP_MASK | LEFT_MASK
 
 .UpDown:
-	ld a, [wPlayerMapX]
+	ld a, [wXCoord + 1]
+	and a, $3F
 	ld d, a
-	ld a, [wPlayerMapY]
+	ld a, [wYCoord + 1]
+	and a, $3F
 	ld e, a
 
 	push de
@@ -1567,9 +1333,9 @@ GetMovementPermissions::
 	ret
 
 .LeftRight:
-	ld a, [wPlayerMapX]
+	ld a, [wXCoord + 1]
 	ld d, a
-	ld a, [wPlayerMapY]
+	ld a, [wYCoord + 1]
 	ld e, a
 
 	push de
@@ -1664,9 +1430,7 @@ GetMovementPermissions::
 	cp HI_NYBBLE_SIDE_BUOYS
 	ret
 
-GetFacingTileCoord::
-; Return map coordinates in (d, e) and tile id in a
-; of the tile the player is facing.
+GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) and tile id in a of the tile the player is facing.
 
 	ld a, [wPlayerDirection]
 	and %1100
@@ -1688,11 +1452,15 @@ GetFacingTileCoord::
 	ld h, [hl]
 	ld l, a
 
-	ld a, [wPlayerMapX]
+	ld a, [wXCoord + 1]
+	and a, $3F
 	add d
+	and a, $3F
 	ld d, a
-	ld a, [wPlayerMapY]
+	ld a, [wYCoord + 1]
+	and a, $3F
 	add e
+	and a, $3F
 	ld e, a
 	ld a, [hl]
 	ret
@@ -1708,7 +1476,7 @@ GetFacingTileCoord::
 	db  1,  0
 	dw wTileRight
 
-GetCoordTile::
+GetCoordTile:: ; make this handle the new layout
 ; Get the collision byte for tile d, e
 	call GetBlockLocation
 	ld a, [hl]
@@ -1742,33 +1510,31 @@ GetCoordTile::
 	ld a, -1
 	ret
 
-GetBlockLocation::
-	ld a, [wMapWidth]
-	add 6
-	ld c, a
-	ld b, 0
-	ld hl, wOverworldMapBlocks + 1
-	add hl, bc
+GetBlockLocation:: ; returns a pointer to the map block at tile location d, e in hl
+	srl d ; bit shifts for the win!
+	srl e
+
+	ld a, d
+	and a, $1F
+	ld d, a
 	ld a, e
-	srl a
-	jr z, .nope
-	and a
-.loop
-	srl a
-	jr nc, .ok
-	add hl, bc
+	and a, $1F
+	ld e, d ; swap d and e
+	ld d, a
 
-.ok
-	sla c
-	rl b
-	and a
-	jr nz, .loop
+	sla e ; this is very clever, me likey
+	sla e
+	sla e
 
-.nope
-	ld c, d
-	srl c
-	ld b, 0
-	add hl, bc
+	srl d ; pack d and e together
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+
+	ld hl, wOverworldMapBlocks
+	add hl, de
 	ret
 
 CheckFacingBGEvent::
@@ -1783,14 +1549,14 @@ CheckFacingBGEvent::
 	sub 4
 	ld e, a
 ; If there are no BG events, we don't need to be here.
-	ld a, [wCurMapBGEventCount]
+	ld a, $00 ; Bypass this for now. TODO - find a  better way to do this
 	and a
 	ret z
 
 	ld c, a
 	ldh a, [hROMBank]
 	push af
-	call SwitchToMapScriptsBank
+	; call SwitchToMapScriptsBank
 	call CheckIfFacingTileCoordIsBGEvent
 	pop hl
 	ld a, h
@@ -1837,14 +1603,14 @@ CheckIfFacingTileCoordIsBGEvent::
 
 CheckCurrentMapCoordEvents::
 ; If there are no coord events, we don't need to be here.
-	ld a, [wCurMapCoordEventCount]
+	ld a, $00 ; Bypass this for now. TODO - come up with a better way of handling coord events
 	and a
 	ret z
 ; Copy the coord event count into c.
 	ld c, a
 	ldh a, [hROMBank]
 	push af
-	call SwitchToMapScriptsBank
+	; call SwitchToMapScriptsBank
 	call .CoordEventCheck
 	pop hl
 	ld a, h
@@ -1852,8 +1618,9 @@ CheckCurrentMapCoordEvents::
 	ret
 
 .CoordEventCheck:
+	ret
 ; Checks to see if you are standing on a coord event.  If yes, copies the event to wCurCoordEvent and sets carry.
-	ld hl, wCurMapCoordEventsPointer
+	/*ld hl, wCurMapCoordEventsPointer ; TODO - make this handle dynamic banks of coordinate events
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
@@ -1905,7 +1672,7 @@ CheckCurrentMapCoordEvents::
 	ld bc, COORD_EVENT_SIZE
 	call CopyBytes
 	scf
-	ret
+	ret */
 
 FadeToMenu::
 	xor a
@@ -1975,7 +1742,7 @@ ReloadTilesetAndPalettes::
 	ld b, a
 	ld a, [wMapNumber]
 	ld c, a
-	call SwitchToAnyMapAttributesBank
+	; call SwitchToAnyMapAttributesBank
 	farcall UpdateTimeOfDayPal
 	call OverworldTextModeSwitch
 	call LoadTilesetGFX
@@ -1987,172 +1754,13 @@ ReloadTilesetAndPalettes::
 	call EnableLCD
 	ret
 
-GetMapPointer::
-	ld a, [wMapGroup]
-	ld b, a
-	ld a, [wMapNumber]
-	ld c, a
-GetAnyMapPointer::
-; Prior to calling this function, you must have switched banks so that
-; MapGroupPointers is visible.
-
-; inputs:
-; b = map group, c = map number
-
-; outputs:
-; hl points to the map within its group
-	push bc ; save map number for later
-
-	; get pointer to map group
-	dec b
-	ld c, b
-	ld b, 0
-	ld hl, MapGroupPointers
-	add hl, bc
-	add hl, bc
-
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	pop bc ; restore map number
-
-	; find the cth map within the group
-	dec c
-	ld b, 0
-	ld a, MAP_LENGTH
-	call AddNTimes
-	ret
-
-GetMapField::
-; Extract data from the current map's group entry.
-
-; inputs:
-; de = offset of desired data within the map (a MAP_* constant)
-
-; outputs:
-; bc = data from the current map's field
-; (e.g., de = MAP_TILESET would return a pointer to the tileset id)
-
-	ld a, [wMapGroup]
-	ld b, a
-	ld a, [wMapNumber]
-	ld c, a
-GetAnyMapField::
-	; bankswitch
-	ldh a, [hROMBank]
-	push af
-	ld a, BANK(MapGroupPointers)
-	rst Bankswitch
-
-	call GetAnyMapPointer
-	add hl, de
-	ld c, [hl]
-	inc hl
-	ld b, [hl]
-
-	; bankswitch back
-	pop af
-	rst Bankswitch
-	ret
-
-SwitchToMapAttributesBank::
-	ld a, [wMapGroup]
-	ld b, a
-	ld a, [wMapNumber]
-	ld c, a
-SwitchToAnyMapAttributesBank::
-	call GetAnyMapAttributesBank
-	rst Bankswitch
-	ret
-
-GetMapAttributesBank:: ; unreferenced
-	ld a, [wMapGroup]
-	ld b, a
-	ld a, [wMapNumber]
-	ld c, a
-GetAnyMapAttributesBank::
-	push hl
-	push de
-	ld de, MAP_MAPATTRIBUTES_BANK
-	call GetAnyMapField
-	ld a, c
-	pop de
-	pop hl
-	ret
-
-CopyMapPartial::
-; Copy map data bank, tileset, environment, and map data address
-; from the current map's entry within its group.
-	ldh a, [hROMBank]
-	push af
-	ld a, BANK(MapGroupPointers)
-	rst Bankswitch
-
-	call GetMapPointer
-	ld de, wMapPartial
-	ld bc, wMapPartialEnd - wMapPartial
-	call CopyBytes
-
-	pop af
-	rst Bankswitch
-	ret
-
-SwitchToMapScriptsBank::
-	ld a, [wMapScriptsBank]
-	rst Bankswitch
-	ret
-
-GetMapScriptsBank::
-	ld a, [wMapScriptsBank]
-	ret
-
-GetAnyMapBlocksBank::
-; Return the blockdata bank for group b map c.
-	push hl
-	push de
-	push bc
-
-	push bc
-	ld de, MAP_MAPATTRIBUTES
-	call GetAnyMapField
-	ld l, c
-	ld h, b
-	pop bc
-
-	push hl
-	ld de, MAP_MAPATTRIBUTES_BANK
-	call GetAnyMapField
-	pop hl
-
-	ld de, MAP_MAPATTRIBUTES ; blockdata bank
-	add hl, de
-	ld a, c
-	call GetFarByte
-	rst Bankswitch
-
-	pop bc
-	pop de
-	pop hl
-	ret
-
-GetMapAttributesPointer::
-; returns the current map's data pointer in hl.
-	push bc
-	push de
-	ld de, MAP_MAPATTRIBUTES
-	call GetMapField
-	ld l, c
-	ld h, b
-	pop de
-	pop bc
-	ret
-
 GetMapEnvironment::
 	push hl
 	push de
 	push bc
 	ld de, MAP_ENVIRONMENT
-	call GetMapField
+	; call GetMapField ; TODO - make this dynamic
+	ld c, INDOOR
 	ld a, c
 	pop bc
 	pop de
@@ -2167,17 +1775,12 @@ GetAnyMapEnvironment::
 	push de
 	push bc
 	ld de, MAP_ENVIRONMENT
-	call GetAnyMapField
+	; call GetAnyMapField ; TODO - make this dynamic
+	ld c, INDOOR
 	ld a, c
 	pop bc
 	pop de
 	pop hl
-	ret
-
-GetAnyMapTileset::
-	ld de, MAP_TILESET
-	call GetAnyMapField
-	ld a, c
 	ret
 
 GetWorldMapLocation::
@@ -2187,7 +1790,8 @@ GetWorldMapLocation::
 	push bc
 
 	ld de, MAP_LOCATION
-	call GetAnyMapField
+	; call GetAnyMapField ; TODO - make this dynamic. This one will probably have to be extended to handle far more landmarks than the base game
+	ld c,  LANDMARK_NEW_BARK_TOWN
 	ld a, c
 
 	pop bc
@@ -2199,13 +1803,13 @@ GetMapMusic::
 	push hl
 	push bc
 	ld de, MAP_MUSIC
-	call GetMapField
+	; call GetMapField ; TODO - make this dynamic
+	ld c, MUSIC_NEW_BARK_TOWN
 	ld a, c
 	cp MUSIC_MAHOGANY_MART
 	jr z, .mahoganymart
 	bit RADIO_TOWER_MUSIC_F, c
 	jr nz, .radiotower
-	farcall Function8b342
 	ld e, c
 	ld d, 0
 .done
@@ -2255,7 +1859,8 @@ GetPhoneServiceTimeOfDayByte::
 	push bc
 
 	ld de, MAP_PALETTE
-	call GetMapField
+	; call GetMapField ; TODO - make this dynamic
+	ld c, PALETTE_DAY
 	ld a, c
 
 	pop bc
@@ -2268,7 +1873,8 @@ GetFishingGroup::
 	push bc
 
 	ld de, MAP_FISHGROUP
-	call GetMapField
+	; call GetMapField ; TODO - make this dynamic
+	ld c, FISHGROUP_SHORE
 	ld a, c
 
 	pop bc

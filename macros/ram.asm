@@ -178,18 +178,6 @@ MACRO channel_struct
                       ds 1
 ENDM
 
-MACRO battle_tower_struct
-\1Name::         ds NAME_LENGTH - 1
-\1TrainerClass:: db
-	; \1Mon1 - \1Mon3 and \1Mon1Name - \1Mon3Name
-	for n, 1, BATTLETOWER_PARTY_LENGTH + 1
-	\1Mon{d:n}::     party_struct \1Mon{d:n}
-	\1Mon{d:n}Name:: ds MON_NAME_LENGTH
-	endr
-\1TrainerData::  ds BATTLETOWER_TRAINERDATALENGTH
-\1TrainerEnd::
-ENDM
-
 MACRO mailmsg
 \1Message::     ds MAIL_MSG_LENGTH
 \1MessageEnd::  db
@@ -308,12 +296,18 @@ MACRO object_struct
 \1Facing::         db
 \1Tile::           db
 \1LastTile::       db
-\1MapX::           db
-\1MapY::           db
-\1LastMapX::       db
-\1LastMapY::       db
-\1InitX::          db
-\1InitY::          db
+\1MapXHigh::       db
+\1MapXLow::        db
+\1MapYHigh::       db
+\1MapYLow::        db
+\1LastMapXHigh::   db
+\1LastMapXLow::    db
+\1LastMapYHigh::   db
+\1LastMapYLow::    db
+\1InitXHigh::      db
+\1InitXLow::       db
+\1InitYHigh::      db
+\1InitYLow::       db
 \1Radius::         db
 \1SpriteX::        db
 \1SpriteY::        db
@@ -324,8 +318,6 @@ MACRO object_struct
 \1Field1d::        ds 1
 \1Field1e::        ds 1
 \1JumpHeight::     db
-\1Range::          db
-	ds 7
 \1StructEnd::
 ENDM
 

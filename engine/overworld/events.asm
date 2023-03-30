@@ -35,11 +35,6 @@ CheckBit5_ScriptFlags2:
 	bit 5, [hl]
 	ret
 
-DisableWarpsConnxns: ; unreferenced
-	ld hl, wScriptFlags2
-	res 2, [hl]
-	ret
-
 DisableCoordEvents: ; unreferenced
 	ld hl, wScriptFlags2
 	res 1, [hl]
@@ -55,11 +50,6 @@ DisableWildEncounters: ; unreferenced
 	res 4, [hl]
 	ret
 
-EnableWarpsConnxns: ; unreferenced
-	ld hl, wScriptFlags2
-	set 2, [hl]
-	ret
-
 EnableCoordEvents: ; unreferenced
 	ld hl, wScriptFlags2
 	set 1, [hl]
@@ -73,11 +63,6 @@ EnableStepCount: ; unreferenced
 EnableWildEncounters:
 	ld hl, wScriptFlags2
 	set 4, [hl]
-	ret
-
-CheckWarpConnxnScriptFlag:
-	ld hl, wScriptFlags2
-	bit 2, [hl]
 	ret
 
 CheckCoordEventScriptFlag:
@@ -96,21 +81,49 @@ CheckWildEncountersScriptFlag:
 	ret
 
 StartMap:
-	xor a
+	/*xor a
 	ld [wScriptVar], a
 	xor a
 	ld [wScriptRunning], a
 	ld hl, wMapStatus
 	ld bc, wMapStatusEnd - wMapStatus
 	call ByteFill
-	farcall InitCallReceiveDelay
+	farcall InitCallReceiveDelay */
 	call ClearJoypad
 EnterMap:
 	xor a
 	ld [wXYComparePointer], a
 	ld [wXYComparePointer + 1], a
-	call SetUpFiveStepWildEncounterCooldown
-	farcall RunMapSetupScript
+	; call SetUpFiveStepWildEncounterCooldown
+	; farcall RunMapSetupScript ; this is what actually tells the game to load the map.
+	ld a, $10 ; TODO - update these to load the actual starting coordinates from the save file
+	ld [wXCoord + 1], a
+	ld a, $10
+	ld [wYCoord + 1], a
+	ld a, $FF
+	ld [wPlayerStepDirection], a ; make sure the map loading doen't use an offset for the player direciton
+	call LoadMapPartsOnSpawn
+	call InitSound
+	call GetMapTimeOfDay ; Pulled from HandleContinueMap
+	call DisableLCD
+	ld [wMapTimeOfDay], a
+	ld a, TILESET_PLAYERS_ROOM
+	ld [wMapTileset], a
+	call BufferScreen
+	farcall LoadMapGraphics
+	farcall LoadMapTimeOfDay
+
+	call EnableLCD
+	farcall LoadMapPalettes
+	farcall SpawnPlayer
+	; ld b, b
+	farcall RefreshMapSprites
+	farcall PlayMapMusicBike
+	farcall FadeInPalettes
+
+	
+	
+
 	call DisableEvents
 
 	ldh a, [hMapEntryMethod]
@@ -130,6 +143,59 @@ EnterMap:
 	ldh [hMapEntryMethod], a
 	ld a, MAPSTATUS_HANDLE
 	ld [wMapStatus], a
+	ret
+
+LoadMapPartsOnSpawn::
+	ld hl, wXCoord
+	ld a, [hli]
+	ld b, a
+	ld a, [hli]
+	ld c, a
+	ld a, [hli]
+	ld d, a
+	ld a, [hli]
+	ld e, a
+	call GetChunkCoords
+	ld bc, $0000
+	ld a, [wXCoord +1] ; This needs to only get the low byte
+	and a, %00011111 ; And a with 31 to get the Player's coords within the chunk
+	cp a, $0f ; If this returns true, player is in the right half of the chunk
+	jr nc, .LeftSide
+	ld hl, wChunkX ; if player is on the right side decrement ChunkX by one so we copy the chunk to the left of the player
+	dec [hl]
+.LeftSide
+	ld a, [wXCoord + 1] ; This needs to only get the low byte
+	and a, %00011111 ; And a with 31 to get the Player's coords within the chunk
+	cp a, $0f ; If this returns true, player is in the bottom half of the chunk
+	rl c ; If player is on the bottom side of the chunk b should now have bit 1 set
+	jr nc, .TopSide
+	ld hl, wChunkY
+	dec [hl]
+.TopSide
+	call CopyChunkHeader ; Top Left
+	ld a, $00
+	ld [wChunkQuadrant], a
+	call LoadChunkToMapBuffer
+	ld hl, wChunkX
+	inc [hl]
+	call CopyChunkHeader ; Top Right
+	ld a, $01
+	ld [wChunkQuadrant], a
+	call LoadChunkToMapBuffer
+	ld hl, wChunkX
+	dec [hl]
+	inc hl ; increment chunk y
+	inc [hl]
+	call CopyChunkHeader ; Bottom Left
+	ld a, $02
+	ld [wChunkQuadrant], a
+	call LoadChunkToMapBuffer
+	ld hl, wChunkX
+	inc [hl]
+	call CopyChunkHeader; bottom right
+	ld a, $03
+	ld [wChunkQuadrant], a
+	call LoadChunkToMapBuffer
 	ret
 
 UnusedWait30Frames: ; unreferenced
@@ -303,18 +369,8 @@ CheckTrainerBattle_GetPlayerEvent:
 	ret
 
 CheckTileEvent:
-; Check for warps, coord events, or wild battles.
-
-	call CheckWarpConnxnScriptFlag
-	jr z, .connections_disabled
-
-	farcall CheckMovingOffEdgeOfMap
-	jr c, .map_connection
-
-	call CheckWarpTile
-	jr c, .warp_tile
-
-.connections_disabled
+; Check for coord events or wild battles.
+; This function will be a pain to manage
 	call CheckCoordEventScriptFlag
 	jr z, .coord_events_disabled
 
@@ -340,19 +396,6 @@ CheckTileEvent:
 	xor a
 	ret
 
-.map_connection
-	ld a, PLAYEREVENT_CONNECTION
-	scf
-	ret
-
-.warp_tile
-	ld a, [wPlayerTile]
-	call CheckPitTile
-	jr nz, .not_pit
-	ld a, PLAYEREVENT_FALL
-	scf
-	ret
-
 .not_pit
 	ld a, PLAYEREVENT_WARP
 	scf
@@ -363,7 +406,7 @@ CheckTileEvent:
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	call CallScript
 	ret
 
@@ -399,8 +442,9 @@ Dummy_CheckScriptFlags2Bit5:
 	ret
 
 RunSceneScript:
-	ld a, [wCurMapSceneScriptCount]
+	ld a, $00 ; [wCurMapSceneScriptCount] - TODO - Make this dynamic
 	and a
+
 	jr z, .nope
 
 	ld c, a
@@ -418,9 +462,9 @@ rept SCENE_SCRIPT_SIZE
 	add hl, de
 endr
 
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	call GetFarWord
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	call CallScript
 
 	ld hl, wScriptFlags
@@ -474,11 +518,6 @@ CheckTimeEvents:
 	ld a, BANK(BugCatchingContestOverScript)
 	ld hl, BugCatchingContestOverScript
 	call CallScript
-	scf
-	ret
-
-.unused ; unreferenced
-	ld a, $8 ; ???
 	scf
 	ret
 
@@ -551,13 +590,13 @@ TryObjectEvent:
 	ld a, [hl]
 	and MAPOBJECT_TYPE_MASK
 
-; BUG: TryObjectEvent arbitrary code execution (see docs/bugs_and_glitches.md)
 	push bc
 	ld de, 3
 	ld hl, ObjectEventTypeArray
 	call IsInArray
-	jr nc, .nope
 	pop bc
+	jr nc, .nope
+
 
 	inc hl
 	ld a, [hli]
@@ -588,7 +627,7 @@ ObjectEventTypeArray:
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
-	call GetMapScriptsBank
+	; call GetMapScriptsBank ; TODO - this will be a pain in the ass
 	call CallScript
 	ret
 
@@ -598,7 +637,7 @@ ObjectEventTypeArray:
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
-	call GetMapScriptsBank
+	; call GetMapScriptsBank ; TODO - make this dynamic
 	ld de, wItemBallData
 	ld bc, wItemBallDataEnd - wItemBallData
 	call FarCopyBytes
@@ -680,8 +719,8 @@ BGEventJumptable:
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
-	call GetMapScriptsBank
-	call CallScript
+	; call GetMapScriptsBank ; TODO - make this dynamic
+	; call CallScript
 	scf
 	ret
 
@@ -689,7 +728,7 @@ BGEventJumptable:
 	call CheckBGEventFlag
 	jp nz, .dontread
 	call PlayTalkObject
-	call GetMapScriptsBank
+	; call GetMapScriptsBank ; TODO - make this dynamic
 	ld de, wHiddenItemData
 	ld bc, wHiddenItemDataEnd - wHiddenItemData
 	call FarCopyBytes
@@ -702,7 +741,7 @@ BGEventJumptable:
 .copy:
 	call CheckBGEventFlag
 	jr nz, .dontread
-	call GetMapScriptsBank
+	; call GetMapScriptsBank ; TODO - make this dynamic
 	ld de, wHiddenItemData
 	ld bc, wHiddenItemDataEnd - wHiddenItemData
 	call FarCopyBytes
@@ -722,10 +761,10 @@ BGEventJumptable:
 	pop hl
 	inc hl
 	inc hl
-	call GetMapScriptsBank
-	call GetFarWord
-	call GetMapScriptsBank
-	call CallScript
+	; call GetMapScriptsBank ; TODO - Make this dynamic
+	; call GetFarWord
+	; call GetMapScriptsBank
+	; call CallScript
 	scf
 	ret
 
@@ -739,12 +778,13 @@ CheckBGEventFlag:
 	ld h, [hl]
 	ld l, a
 	push hl
-	call GetMapScriptsBank
-	call GetFarWord
+	; call GetMapScriptsBank
+	; call GetFarWord
 	ld e, l
 	ld d, h
 	ld b, CHECK_FLAG
-	call EventFlagAction
+	; call EventFlagAction
+	ld c, $00 ; TODO - make this dynamic
 	ld a, c
 	and a
 	pop hl

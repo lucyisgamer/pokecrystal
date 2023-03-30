@@ -14,7 +14,6 @@ MapSetupCommands:
 	add_mapsetup PlayMapMusicBike ; 07
 	add_mapsetup ForceMapMusic ; 08
 	add_mapsetup FadeInToMusic ; 09
-	add_mapsetup LoadBlockData ; 0a (callback 1)
 	add_mapsetup LoadConnectionBlockData ; 0b
 	add_mapsetup SaveScreen ; 0c
 	add_mapsetup BufferScreen ; 0d
@@ -28,18 +27,12 @@ MapSetupCommands:
 	add_mapsetup HandleContinueMap ; 15
 	add_mapsetup LoadMapObjects ; 16
 	add_mapsetup EnterMapSpawnPoint ; 17
-	add_mapsetup EnterMapConnection ; 18
 	add_mapsetup EnterMapWarp ; 19
-	add_mapsetup LoadMapAttributes ; 1a
-	add_mapsetup LoadMapAttributes_SkipObjects ; 1b
 	add_mapsetup ClearBGPalettes ; 1c
 	add_mapsetup FadeOutPalettes ; 1d
 	add_mapsetup FadeInPalettes ; 1e
-	add_mapsetup GetMapScreenCoords ; 1f
-	add_mapsetup GetWarpDestCoords ; 20
 	add_mapsetup SpawnInFacingDown ; 21
 	add_mapsetup SpawnPlayer ; 22
-	add_mapsetup RefreshPlayerCoords ; 23
 	add_mapsetup ResetPlayerObjectAction ; 24
 	add_mapsetup SkipUpdateMapSprites ; 25
 	add_mapsetup UpdateRoamMons ; 26

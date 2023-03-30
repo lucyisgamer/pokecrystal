@@ -1,5 +1,5 @@
 ; object_struct members (see macros/ram.asm)
-rsreset
+rsreset ; 
 DEF OBJECT_SPRITE           rb ; 00
 DEF OBJECT_MAP_OBJECT_INDEX rb ; 01
 DEF OBJECT_SPRITE_TILE      rb ; 02
@@ -16,26 +16,34 @@ DEF OBJECT_STEP_FRAME       rb ; 0c
 DEF OBJECT_FACING           rb ; 0d
 DEF OBJECT_TILE             rb ; 0e
 DEF OBJECT_LAST_TILE        rb ; 0f
-DEF OBJECT_MAP_X            rb ; 10
-DEF OBJECT_MAP_Y            rb ; 11
-DEF OBJECT_LAST_MAP_X       rb ; 12
-DEF OBJECT_LAST_MAP_Y       rb ; 13
-DEF OBJECT_INIT_X           rb ; 14
-DEF OBJECT_INIT_Y           rb ; 15
-DEF OBJECT_RADIUS           rb ; 16
-DEF OBJECT_SPRITE_X         rb ; 17
-DEF OBJECT_SPRITE_Y         rb ; 18
-DEF OBJECT_SPRITE_X_OFFSET  rb ; 19
-DEF OBJECT_SPRITE_Y_OFFSET  rb ; 1a
-DEF OBJECT_MOVEMENT_INDEX   rb ; 1b
-DEF OBJECT_STEP_INDEX       rb ; 1c
-DEF OBJECT_1D               rb ; 1d
-DEF OBJECT_1E               rb ; 1e
-DEF OBJECT_JUMP_HEIGHT      rb ; 1f
-DEF OBJECT_RANGE            rb ; 20
-                            rb_skip 7
+DEF OBJECT_MAP_X_HIGH       rb ; 10
+DEF OBJECT_MAP_X_LOW        rb ; 11
+DEF OBJECT_MAP_Y_HIGH       rb ; 12
+DEF OBJECT_MAP_Y_LOW        rb ; 13
+DEF OBJECT_LAST_MAP_X_HIGH  rb ; 14
+DEF OBJECT_LAST_MAP_X_LOW   rb ; 15
+DEF OBJECT_LAST_MAP_Y_HIGH  rb ; 16
+DEF OBJECT_LAST_MAP_Y_LOW   rb ; 17
+DEF OBJECT_INIT_X_HIGH      rb ; 18
+DEF OBJECT_INIT_X_LOW       rb ; 19
+DEF OBJECT_INIT_Y_HIGH      rb ; 1A
+DEF OBJECT_INIT_Y_LOW       rb ; 1B
+DEF OBJECT_RADIUS           rb ; 1C
+DEF OBJECT_SPRITE_X         rb ; 1D
+DEF OBJECT_SPRITE_Y         rb ; 1E
+DEF OBJECT_SPRITE_X_OFFSET  rb ; 1F
+DEF OBJECT_SPRITE_Y_OFFSET  rb ; 20
+DEF OBJECT_MOVEMENT_INDEX   rb ; 21
+DEF OBJECT_STEP_INDEX       rb ; 22
+DEF OBJECT_1D               rb ; 23
+DEF OBJECT_1E               rb ; 24
+DEF OBJECT_JUMP_HEIGHT      rb ; 25
+DEF OBJECT_RANGE            rb ; 26
+DEF OBJECT_Z                rb ; 27 ; whoa we're going into the fuckin third dimension!
+DEF OBJECT_INIT_Z           rb ; 28
 DEF OBJECT_LENGTH EQU _RS
 DEF NUM_OBJECT_STRUCTS EQU 13 ; see wObjectStructs
+
 
 ; object_struct OBJECT_DIRECTION values
 DEF OW_DOWN  EQU DOWN  << 2
@@ -100,20 +108,22 @@ DEF ABSOLUTE_TILE_ID    EQU 1 << ABSOLUTE_TILE_ID_F
 rsreset
 DEF MAPOBJECT_OBJECT_STRUCT_ID rb ; 0
 DEF MAPOBJECT_SPRITE           rb ; 1
-DEF MAPOBJECT_Y_COORD          rb ; 2
-DEF MAPOBJECT_X_COORD          rb ; 3
-DEF MAPOBJECT_MOVEMENT         rb ; 4
-DEF MAPOBJECT_RADIUS           rb ; 5
-DEF MAPOBJECT_HOUR_1           rb ; 6
-DEF MAPOBJECT_HOUR_2           rb ; 7
+DEF MAPOBJECT_X_COORD_HIGH     rb ; 2
+DEF MAPOBJECT_X_COORD_LOW      rb ; 3
+DEF MAPOBJECT_Y_COORD_HIGH     rb ; 4
+DEF MAPOBJECT_Y_COORD_LOW      rb ; 5
+DEF MAPOBJECT_MOVEMENT         rb ; 6
+DEF MAPOBJECT_RADIUS           rb ; 7
+DEF MAPOBJECT_HOUR_1           rb ; 8
+DEF MAPOBJECT_HOUR_2           rb ; 9
 rsset MAPOBJECT_HOUR_2
-DEF MAPOBJECT_TIMEOFDAY        rb ; 7
-DEF MAPOBJECT_PALETTE          rb ; 8
+DEF MAPOBJECT_TIMEOFDAY        rb ; A
+DEF MAPOBJECT_PALETTE          rb ; B
 rsset MAPOBJECT_PALETTE
-DEF MAPOBJECT_TYPE             rb ; 8
-DEF MAPOBJECT_SIGHT_RANGE      rb ; 9
-DEF MAPOBJECT_SCRIPT_POINTER   rw ; a
-DEF MAPOBJECT_EVENT_FLAG       rw ; c
+DEF MAPOBJECT_TYPE             rb ; C
+DEF MAPOBJECT_SIGHT_RANGE      rb ; D
+DEF MAPOBJECT_SCRIPT_POINTER   rw ; F
+DEF MAPOBJECT_EVENT_FLAG       rw ; 11
                                rb_skip 2
 DEF MAPOBJECT_LENGTH EQU _RS
 DEF NUM_OBJECTS EQU 16
@@ -163,7 +173,7 @@ DEF MAPOBJECT_SCREEN_HEIGHT EQU (SCREEN_HEIGHT / 2) + 2
 	const SPRITEMOVEDATA_SUDOWOODO            ; 17
 	const SPRITEMOVEDATA_SMASHABLE_ROCK       ; 18
 	const SPRITEMOVEDATA_STRENGTH_BOULDER     ; 19
-	const SPRITEMOVEDATA_FOLLOWNOTEXACT       ; 1a
+	const SPRITEMOVEDATA_UNUSED               ; 1a (duplicate filler)
 	const SPRITEMOVEDATA_SHADOW               ; 1b
 	const SPRITEMOVEDATA_EMOTE                ; 1c
 	const SPRITEMOVEDATA_SCREENSHAKE          ; 1d
@@ -196,7 +206,7 @@ DEF NUM_SPRITEMOVEDATA EQU const_value
 	const SPRITEMOVEFN_FOLLOW                ; 0f
 	const SPRITEMOVEFN_SCRIPTED              ; 10
 	const SPRITEMOVEFN_STRENGTH              ; 11
-	const SPRITEMOVEFN_FOLLOWNOTEXACT        ; 12
+	const SPRITEMOVEFN_UNUSED                ; 12 (duplicate)
 	const SPRITEMOVEFN_SHADOW                ; 13
 	const SPRITEMOVEFN_EMOTE                 ; 14
 	const SPRITEMOVEFN_BIG_SNORLAX           ; 15

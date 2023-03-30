@@ -40,16 +40,12 @@ DoAnimFrame:
 	dw AnimSeq_FlyLeaf
 	dw AnimSeq_FlyTo
 	dw AnimSeq_GSIntroHoOhLugia
-	dw AnimSeq_EZChatCursor
-	dw AnimSeq_MobileTradeSentPulse
-	dw AnimSeq_MobileTradeOTPulse
 	dw AnimSeq_IntroSuicune
 	dw AnimSeq_IntroPichuWooper
 	dw AnimSeq_Celebi
 	dw AnimSeq_IntroUnown
 	dw AnimSeq_IntroUnownF
 	dw AnimSeq_IntroSuicuneAway
-	assert_table_length NUM_SPRITE_ANIM_SEQS
 
 AnimSeq_Null:
 	ret
@@ -739,14 +735,6 @@ AnimSeq_FlyTo:
 	ld [hl], a
 	ret
 
-AnimSeq_MobileTradeSentPulse:
-	farcall MobileTradeAnim_AnimateSentPulse
-	ret
-
-AnimSeq_MobileTradeOTPulse:
-	farcall MobileTradeAnim_AnimateOTPulse
-	ret
-
 AnimSeq_IntroSuicune:
 	ld a, [wIntroSceneTimer]
 	and a
@@ -834,10 +822,6 @@ AnimSeq_IntroSuicuneAway:
 	ld a, [hl]
 	add 16
 	ld [hl], a
-	ret
-
-AnimSeq_EZChatCursor:
-	farcall AnimateEZChatCursor
 	ret
 
 AnimSeq_Celebi:

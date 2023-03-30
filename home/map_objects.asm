@@ -199,8 +199,41 @@ CheckStandingOnEntrance::
 	cp COLL_CAVE
 	ret
 
-GetMapObject::
-; Return the location of map object a in bc.
+GetTopLeftScreenCoords:: ; Returns the 16 bit x and y coords of the top left corner of the screen in bc and de respectively. Preserves a and hl
+	push af
+	ld a, [wXCoord + 1]
+	sub a, $04
+	ld c, a
+	ld a, [wXCoord]
+	sbc a, $00
+	ld b, a
+	ld a, [wYCoord + 1]
+	sub a, $04
+	ld e, a
+	ld a, [wYCoord]
+	sbc a, $00
+	ld d, a
+	pop af
+	ret
+
+GetBottomRightScreenCoords:: ; Returns the 16 bit x and y coords of the bottom right corner of the screen in bc and de respectively. Preserves a and hl
+	push af
+	ld a, [wXCoord + 1]
+	add a, $05
+	ld c, a
+	ld a, [wXCoord]
+	adc a, $00
+	ld b, a
+	ld a, [wYCoord + 1]
+	add a, $04
+	ld e, a
+	ld a, [wYCoord]
+	adc a, $00
+	ld d, a
+	pop af
+	ret
+
+GetMapObject:: ; Return the location of map object a in bc. Doesn't preserve hl
 	ld hl, wMapObjects
 	ld bc, MAPOBJECT_LENGTH
 	call AddNTimes
@@ -208,8 +241,7 @@ GetMapObject::
 	ld c, l
 	ret
 
-CheckObjectVisibility::
-; Sets carry if the object is not visible on the screen.
+CheckObjectVisibility:: ; Sets carry if the object is not visible on the screen.
 	ldh [hMapObjectIndex], a
 	call GetMapObject
 	ld hl, MAPOBJECT_OBJECT_STRUCT_ID
@@ -257,8 +289,7 @@ CheckObjectTime::
 	and a
 	ret
 
-.TimesOfDay:
-; entries correspond to TimeOfDay values
+.TimesOfDay: ; entries correspond to TimeOfDay values
 	db MORN
 	db DAY
 	db NITE
@@ -298,12 +329,6 @@ CheckObjectTime::
 
 .no
 	scf
-	ret
-
-CopyMapObjectStruct:: ; unreferenced
-	ldh [hMapObjectIndex], a
-	call GetMapObject
-	call CopyObjectStruct
 	ret
 
 UnmaskCopyMapObjectStruct::
@@ -622,7 +647,7 @@ SetSpriteDirection::
 	ld [hl], a
 	ret
 
-GetSpriteDirection::
+GetSpriteDirection:: ; returns direction of object at location bc in a, shifted left by 2. doesn't preserve hl or a
 	ld hl, OBJECT_DIRECTION
 	add hl, bc
 	ld a, [hl]

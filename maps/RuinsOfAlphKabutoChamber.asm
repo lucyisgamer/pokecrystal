@@ -77,7 +77,6 @@ RuinsOfAlphKabutoChamberPuzzle:
 	playsound SFX_KINESIS
 	waitsfx
 	pause 20
-	warpcheck
 	end
 
 RuinsOfAlphKabutoChamberScientistScript:

@@ -77,15 +77,8 @@ NewGame:
 	ldh [hMapEntryMethod], a
 	jp FinishContinueFunction
 
-AreYouABoyOrAreYouAGirl:
-	farcall Mobile_AlwaysReturnNotCarry ; mobile
-	jr c, .ok
+AreYouABoyOrAreYouAGirl: ; TODO - teach the game that gender isnt'
 	farcall InitGender
-	ret
-
-.ok
-	ld c, 0
-	farcall InitMobileProfile ; mobile
 	ret
 
 if DEF(_DEBUG)
@@ -219,8 +212,6 @@ endc
 	farcall InitDecorations
 
 	farcall DeletePartyMonMail
-
-	farcall DeleteMobileEventIndex
 
 	call ResetGameTime
 	ret
@@ -365,7 +356,6 @@ Continue:
 	ld a, HIGH(MUSIC_NONE)
 	ld [wMusicFadeID + 1], a
 	call ClearBGPalettes
-	call Continue_MobileAdapterMenu
 	call CloseWindow
 	call ClearTilemap
 	ld c, 20
@@ -398,36 +388,6 @@ PostCreditsSpawn:
 	ld [wSpawnAfterChampion], a
 	ld a, MAPSETUP_WARP
 	ldh [hMapEntryMethod], a
-	ret
-
-Continue_MobileAdapterMenu:
-	farcall Mobile_AlwaysReturnNotCarry ; mobile check
-	ret nc
-
-; the rest of this stuff is never reached because
-; the previous function returns with carry not set
-	ld hl, wd479
-	bit 1, [hl]
-	ret nz
-	ld a, 5
-	ld [wMusicFade], a
-	ld a, LOW(MUSIC_MOBILE_ADAPTER_MENU)
-	ld [wMusicFadeID], a
-	ld a, HIGH(MUSIC_MOBILE_ADAPTER_MENU)
-	ld [wMusicFadeID + 1], a
-	ld c, 20
-	call DelayFrames
-	ld c, $1
-	farcall InitMobileProfile ; mobile
-	farcall _SaveData
-	ld a, 8
-	ld [wMusicFade], a
-	ld a, LOW(MUSIC_NONE)
-	ld [wMusicFadeID], a
-	ld a, HIGH(MUSIC_NONE)
-	ld [wMusicFadeID + 1], a
-	ld c, 35
-	call DelayFrames
 	ret
 
 ConfirmContinue:

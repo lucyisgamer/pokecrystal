@@ -65,7 +65,6 @@ RuinsOfAlphOutsideScientistSceneContinue:
 	stopfollow
 	applymovement PLAYER, RuinsOfAlphOutsidePlayerEnterLabMovement
 	setmapscene RUINS_OF_ALPH_RESEARCH_CENTER, SCENE_RUINSOFALPHRESEARCHCENTER_GET_UNOWN_DEX
-	warpcheck
 	end
 
 RuinsOfAlphOutsideFisherScript:

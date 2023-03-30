@@ -29,12 +29,8 @@ MapSetupScript_Warp:
 	mapsetup DisableLCD
 	mapsetup InitSound
 	mapsetup EnterMapSpawnPoint
-	mapsetup LoadMapAttributes
 	mapsetup HandleNewMap
 	mapsetup SpawnPlayer
-	mapsetup RefreshPlayerCoords
-	mapsetup GetMapScreenCoords
-	mapsetup LoadBlockData
 	mapsetup BufferScreen
 	mapsetup LoadMapGraphics
 	mapsetup LoadMapTimeOfDay
@@ -52,12 +48,8 @@ MapSetupScript_Warp:
 
 MapSetupScript_BadWarp:
 	mapsetup EnterMapSpawnPoint
-	mapsetup LoadMapAttributes
 	mapsetup HandleNewMap
 	mapsetup SpawnPlayer
-	mapsetup RefreshPlayerCoords
-	mapsetup GetMapScreenCoords
-	mapsetup LoadBlockData
 	mapsetup BufferScreen
 	mapsetup DisableLCD
 	mapsetup LoadMapGraphics
@@ -76,11 +68,7 @@ MapSetupScript_BadWarp:
 
 MapSetupScript_Connection:
 	mapsetup SuspendMapAnims
-	mapsetup EnterMapConnection
-	mapsetup LoadMapAttributes
 	mapsetup HandleNewMap
-	mapsetup RefreshPlayerCoords
-	mapsetup LoadBlockData
 	mapsetup LoadMapTileset
 	mapsetup SaveScreen
 	mapsetup LoadMapObjects
@@ -99,11 +87,7 @@ MapSetupScript_Door:
 	mapsetup FadeOutPalettes
 MapSetupScript_Train:
 	mapsetup EnterMapWarp
-	mapsetup LoadMapAttributes
-	mapsetup GetWarpDestCoords
 	mapsetup HandleNewMap
-	mapsetup RefreshPlayerCoords
-	mapsetup LoadBlockData
 	mapsetup BufferScreen
 	mapsetup DisableLCD
 	mapsetup LoadMapGraphics
@@ -125,7 +109,7 @@ MapSetupScript_ReloadMap:
 	mapsetup ClearBGPalettes
 	mapsetup DisableLCD
 	mapsetup InitSound
-	mapsetup LoadBlockData
+	;mapsetup LoadBlockData
 	mapsetup LoadConnectionBlockData
 	mapsetup LoadMapGraphics
 	mapsetup LoadMapTimeOfDay
@@ -143,7 +127,7 @@ MapSetupScript_LinkReturn:
 	mapsetup DisableLCD
 	mapsetup InitSound
 	mapsetup HandleNewMap
-	mapsetup LoadBlockData
+	;mapsetup LoadBlockData
 	mapsetup BufferScreen
 	mapsetup LoadMapGraphics
 	mapsetup LoadMapTimeOfDay
@@ -160,10 +144,8 @@ MapSetupScript_LinkReturn:
 MapSetupScript_Continue:
 	mapsetup DisableLCD
 	mapsetup InitSound
-	mapsetup LoadMapAttributes_SkipObjects
-	mapsetup GetMapScreenCoords
-	mapsetup HandleContinueMap
-	mapsetup LoadBlockData
+	mapsetup HandleContinueMap ; Only needed for finding the map time of day
+	;mapsetup LoadBlockData ; Zero out the wOverworldMapBlocks buffer
 	mapsetup LoadConnectionBlockData
 	mapsetup BufferScreen
 	mapsetup LoadMapGraphics
@@ -178,6 +160,6 @@ MapSetupScript_Continue:
 	db -1 ; end
 
 MapSetupScript_Submenu:
-	mapsetup LoadBlockData
+	;mapsetup LoadBlockData
 	mapsetup LoadConnectionBlockData
 	db -1 ; end

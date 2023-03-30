@@ -47,7 +47,7 @@ SECTION "lcd", ROM0[$0048]
 	jp LCD
 
 SECTION "timer", ROM0[$0050]
-	jp MobileTimer
+	reti ; This could be useful for implementing a routine later
 
 SECTION "serial", ROM0[$0058]
 	jp Serial

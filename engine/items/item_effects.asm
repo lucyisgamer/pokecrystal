@@ -502,8 +502,6 @@ PokeBallEffect:
 	cp BATTLETYPE_TUTORIAL
 	jp z, .FinishTutorial
 
-	farcall StubbedTrainerRankings_WildMonsCaught
-
 	ld hl, Text_GotchaMonWasCaught
 	call PrintText
 

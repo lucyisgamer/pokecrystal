@@ -308,18 +308,6 @@ UpdateTimeRemaining:
 	scf
 	ret
 
-GetSecondsSinceIfLessThan60: ; unreferenced
-	ld a, [wDaysSince]
-	and a
-	jr nz, GetTimeElapsed_ExceedsUnitLimit
-	ld a, [wHoursSince]
-	and a
-	jr nz, GetTimeElapsed_ExceedsUnitLimit
-	ld a, [wMinutesSince]
-	jr nz, GetTimeElapsed_ExceedsUnitLimit
-	ld a, [wSecondsSince]
-	ret
-
 GetMinutesSinceIfLessThan60:
 	ld a, [wDaysSince]
 	and a
@@ -328,13 +316,6 @@ GetMinutesSinceIfLessThan60:
 	and a
 	jr nz, GetTimeElapsed_ExceedsUnitLimit
 	ld a, [wMinutesSince]
-	ret
-
-GetHoursSinceIfLessThan24: ; unreferenced
-	ld a, [wDaysSince]
-	and a
-	jr nz, GetTimeElapsed_ExceedsUnitLimit
-	ld a, [wHoursSince]
 	ret
 
 GetDaysSince:

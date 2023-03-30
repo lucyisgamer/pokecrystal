@@ -405,8 +405,6 @@ UsedSurfScript:
 	waitbutton
 	closetext
 
-	callasm .stubbed_fn
-
 	readmem wSurfingPlayerState
 	writevar VAR_MOVEMENT
 
@@ -416,11 +414,7 @@ UsedSurfScript:
 	special SurfStartStep
 	applymovement PLAYER, wMovementBuffer
 	end
-
-.stubbed_fn
-	farcall StubbedTrainerRankings_Surf
-	ret
-
+	
 UsedSurfText:
 	text_far _UsedSurfText
 	text_end
@@ -689,7 +683,6 @@ Script_UsedWaterfall:
 	ld a, [wPlayerTile]
 	call CheckWaterfallTile
 	ret z
-	farcall StubbedTrainerRankings_Waterfall
 	ld a, $1
 	ld [wScriptVar], a
 	ret
@@ -1718,10 +1711,6 @@ Script_GetOnBike_Register:
 	closetext
 	special UpdatePlayerSprite
 	end
-
-Overworld_DummyFunction: ; unreferenced
-	nop
-	ret
 
 Script_GetOffBike:
 	reloadmappart

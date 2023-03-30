@@ -16,15 +16,15 @@ BlankScreen:
 	call SetPalettes
 	ret
 
-SpawnPlayer:
+SpawnPlayer::
 	ld a, -1
 	ld [wObjectFollow_Leader], a
 	ld [wObjectFollow_Follower], a
 	ld a, PLAYER
 	ld hl, PlayerObjectTemplate
 	call CopyPlayerObjectTemplate
-	ld b, PLAYER
-	call PlayerSpawn_ConvertCoords
+	ld a, PLAYER
+	call PlayerSpawn_CopyCoords
 	ld a, PLAYER_OBJECT
 	call GetMapObject
 	ld hl, MAPOBJECT_PALETTE
@@ -55,31 +55,37 @@ PlayerObjectTemplate:
 ; A dummy map object used to initialize the player object.
 ; Shorter than the actual amount copied by two bytes.
 ; Said bytes seem to be unused.
-	object_event -4, -4, SPRITE_CHRIS, SPRITEMOVEDATA_PLAYER, 15, 15, -1, -1, 0, OBJECTTYPE_SCRIPT, 0, 0, -1
+	object_event $0010, $0010, SPRITE_CHRIS, SPRITEMOVEDATA_PLAYER, 15, 15, -1, -1, 0, OBJECTTYPE_SCRIPT, 0, 0, -1
 
-CopyDECoordsToMapObject::
+CopyBCDECoordsToMapObject::
+	push bc
 	push de
-	ld a, b
 	call GetMapObject
 	pop de
-	ld hl, MAPOBJECT_X_COORD
+	ld hl, MAPOBJECT_X_COORD_HIGH
 	add hl, bc
+	pop bc
+	ld [hl], b
+	inc hl
+	ld [hl], c
+	inc hl
 	ld [hl], d
-	ld hl, MAPOBJECT_Y_COORD
-	add hl, bc
+	inc hl
 	ld [hl], e
 	ret
 
-PlayerSpawn_ConvertCoords:
-	push bc
-	ld a, [wXCoord]
-	add 4
-	ld d, a
-	ld a, [wYCoord]
-	add 4
-	ld e, a
-	pop bc
-	call CopyDECoordsToMapObject
+PlayerSpawn_CopyCoords:
+	push hl
+	ld hl, wXCoord
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+	inc hl
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
+	pop hl
+	call CopyBCDECoordsToMapObject
 	ret
 
 WriteObjectXY::
@@ -87,45 +93,18 @@ WriteObjectXY::
 	call CheckObjectVisibility
 	ret c
 
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+	inc hl
 	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
+	inc hl
 	ld e, [hl]
 	ldh a, [hMapObjectIndex]
-	ld b, a
-	call CopyDECoordsToMapObject
+	call CopyBCDECoordsToMapObject
 	and a
-	ret
-
-RefreshPlayerCoords:
-	ld a, [wXCoord]
-	add 4
-	ld d, a
-	ld hl, wPlayerMapX
-	sub [hl]
-	ld [hl], d
-	ld hl, wMapObjects + MAPOBJECT_X_COORD
-	ld [hl], d
-	ld hl, wPlayerLastMapX
-	ld [hl], d
-	ld d, a
-	ld a, [wYCoord]
-	add 4
-	ld e, a
-	ld hl, wPlayerMapY
-	sub [hl]
-	ld [hl], e
-	ld hl, wMapObjects + MAPOBJECT_Y_COORD
-	ld [hl], e
-	ld hl, wPlayerLastMapY
-	ld [hl], e
-	ld e, a
-; the next three lines are useless
-	ld a, [wObjectFollow_Leader]
-	cp PLAYER
-	ret nz
 	ret
 
 CopyObjectStruct::
@@ -208,15 +187,25 @@ CopyMapObjectToObjectStruct:
 	ld a, [hl]
 	ld [wTempObjectCopyRange], a
 
-	ld hl, MAPOBJECT_X_COORD
+	ld hl, MAPOBJECT_X_COORD_HIGH
 	add hl, bc
 	ld a, [hl]
-	ld [wTempObjectCopyX], a
+	ld [wTempObjectCopyXHigh], a
 
-	ld hl, MAPOBJECT_Y_COORD
+	ld hl, MAPOBJECT_X_COORD_LOW
 	add hl, bc
 	ld a, [hl]
-	ld [wTempObjectCopyY], a
+	ld [wTempObjectCopyXLow], a
+
+	ld hl, MAPOBJECT_Y_COORD_HIGH
+	add hl, bc
+	ld a, [hl]
+	ld [wTempObjectCopyYHigh], a
+
+	ld hl, MAPOBJECT_Y_COORD_LOW
+	add hl, bc
+	ld a, [hl]
+	ld [wTempObjectCopyYLow], a
 
 	ld hl, MAPOBJECT_RADIUS
 	add hl, bc
@@ -241,12 +230,12 @@ InitializeVisibleSprites:
 	cp -1
 	jr nz, .next
 
-	ld a, [wXCoord]
+	ld a, [wXCoord + 1]
 	ld d, a
-	ld a, [wYCoord]
+	ld a, [wYCoord + 1]
 	ld e, a
 
-	ld hl, MAPOBJECT_X_COORD
+	ld hl, MAPOBJECT_X_COORD_LOW
 	add hl, bc
 	ld a, [hl]
 	add 1
@@ -256,7 +245,7 @@ InitializeVisibleSprites:
 	cp MAPOBJECT_SCREEN_WIDTH
 	jr nc, .next
 
-	ld hl, MAPOBJECT_Y_COORD
+	ld hl, MAPOBJECT_Y_COORD_LOW
 	add hl, bc
 	ld a, [hl]
 	add 1
@@ -285,8 +274,7 @@ InitializeVisibleSprites:
 .ret
 	ret
 
-CheckObjectEnteringVisibleRange::
-	nop
+CheckObjectEnteringVisibleRange:: ; If objects do weird shit with visibility check here first
 	ld a, [wPlayerStepDirection]
 	cp STANDING
 	ret z
@@ -301,16 +289,16 @@ CheckObjectEnteringVisibleRange::
 	dw .Right
 
 .Up:
-	ld a, [wYCoord]
+	ld a, [wYCoord + 1]
 	sub 1
 	jr .Vertical
 
 .Down:
-	ld a, [wYCoord]
+	ld a, [wYCoord + 1]
 	add 9
 .Vertical:
 	ld d, a
-	ld a, [wXCoord]
+	ld a, [wXCoord + 1]
 	ld e, a
 	ld bc, wMap1Object
 	ld a, 1
@@ -321,7 +309,7 @@ CheckObjectEnteringVisibleRange::
 	ld a, [hl]
 	and a
 	jr z, .next_v
-	ld hl, MAPOBJECT_Y_COORD
+	ld hl, MAPOBJECT_Y_COORD_LOW
 	add hl, bc
 	ld a, d
 	cp [hl]
@@ -331,7 +319,7 @@ CheckObjectEnteringVisibleRange::
 	ld a, [hl]
 	cp -1
 	jr nz, .next_v
-	ld hl, MAPOBJECT_X_COORD
+	ld hl, MAPOBJECT_X_COORD_LOW
 	add hl, bc
 	ld a, [hl]
 	add 1
@@ -357,16 +345,16 @@ CheckObjectEnteringVisibleRange::
 	ret
 
 .Left:
-	ld a, [wXCoord]
+	ld a, [wXCoord + 1]
 	sub 1
 	jr .Horizontal
 
 .Right:
-	ld a, [wXCoord]
+	ld a, [wXCoord + 1]
 	add 10
 .Horizontal:
 	ld e, a
-	ld a, [wYCoord]
+	ld a, [wYCoord + 1]
 	ld d, a
 	ld bc, wMap1Object
 	ld a, 1
@@ -377,7 +365,7 @@ CheckObjectEnteringVisibleRange::
 	ld a, [hl]
 	and a
 	jr z, .next_h
-	ld hl, MAPOBJECT_X_COORD
+	ld hl, MAPOBJECT_X_COORD_LOW
 	add hl, bc
 	ld a, e
 	cp [hl]
@@ -387,7 +375,7 @@ CheckObjectEnteringVisibleRange::
 	ld a, [hl]
 	cp -1
 	jr nz, .next_h
-	ld hl, MAPOBJECT_Y_COORD
+	ld hl, MAPOBJECT_Y_COORD_LOW
 	add hl, bc
 	ld a, [hl]
 	add 1
@@ -427,10 +415,16 @@ CopyTempObjectToObjectStruct:
 	or [hl]
 	ld [hl], a
 
-	ld a, [wTempObjectCopyY]
+	ld a, [wTempObjectCopyYHigh]
+	ld b, a
+	ld a, [wTempObjectCopyYLow]
+	ld c, a
 	call .InitYCoord
 
-	ld a, [wTempObjectCopyX]
+	ld a, [wTempObjectCopyXHigh]
+	ld b, a
+	ld a, [wTempObjectCopyXLow]
+	ld c, a
 	call .InitXCoord
 
 	ld a, [wTempObjectCopySprite]
@@ -463,16 +457,27 @@ CopyTempObjectToObjectStruct:
 	ret
 
 .InitYCoord:
-	ld hl, OBJECT_INIT_Y
+	ld hl, OBJECT_INIT_Y_HIGH
 	add hl, de
-	ld [hl], a
+	ld [hl], b ; b is high, c is low
 
-	ld hl, OBJECT_MAP_Y
+	ld hl, OBJECT_INIT_Y_LOW
 	add hl, de
-	ld [hl], a
+	ld [hl], c
 
-	ld hl, wYCoord
+	ld hl, OBJECT_MAP_Y_HIGH
+	add hl, de
+	ld [hl], b
+
+	ld hl, OBJECT_MAP_Y_LOW
+	add hl, de
+	ld [hl], c
+
+
+	ld a, c
+	ld hl, wYCoord + 1 ; low byte of y pos
 	sub [hl]
+	add a, $04
 	and $f
 	swap a
 	ld hl, wPlayerBGMapOffsetY
@@ -483,14 +488,25 @@ CopyTempObjectToObjectStruct:
 	ret
 
 .InitXCoord:
-	ld hl, OBJECT_INIT_X
+	ld hl, OBJECT_INIT_X_HIGH
 	add hl, de
-	ld [hl], a
-	ld hl, OBJECT_MAP_X
+	ld [hl], b
+
+	ld hl, OBJECT_INIT_X_LOW
 	add hl, de
-	ld [hl], a
-	ld hl, wXCoord
+	ld [hl], c
+
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, de
+	ld [hl], b
+
+	ld hl, OBJECT_MAP_X_LOW
+	add hl, de
+	ld [hl], c
+
+	ld hl, wXCoord + 1
 	sub [hl]
+	add a, $04
 	and $f
 	swap a
 	ld hl, wPlayerBGMapOffsetX
@@ -556,23 +572,17 @@ TrainerWalkToPlayer:
 	ld a, [hl]
 	call GetObjectStruct
 
-; get last talked coords, load to bc
-	ld hl, OBJECT_MAP_X
+; get last talked coords pointer, load to bc
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
-	ld a, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld c, [hl]
-	ld b, a
+	ld b, h
+	ld c, l
 
-; get player coords, load to de
-	ld hl, OBJECT_MAP_X
+; get player coords pointer, load to de
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, de
-	ld a, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, de
-	ld e, [hl]
-	ld d, a
+	ld d, h
+	ld e, l
 
 	pop af
 	call ComputePathToWalkToPlayer
@@ -604,95 +614,7 @@ SurfStartStep:
 	slow_step LEFT
 	slow_step RIGHT
 
-FollowNotExact::
-	push bc
-	ld a, c
-	call CheckObjectVisibility
-	ld d, b
-	ld e, c
-	pop bc
-	ret c
-
-	ld a, b
-	call CheckObjectVisibility
-	ret c
-
-; object 2 is now in bc, object 1 is now in de
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld c, [hl]
-	ld b, a
-
-	ld hl, OBJECT_MAP_X
-	add hl, de
-	ld a, [hl]
-	cp b
-	jr z, .same_x
-	jr c, .to_the_left
-	inc b
-	jr .continue
-
-.to_the_left
-	dec b
-	jr .continue
-
-.same_x
-	ld hl, OBJECT_MAP_Y
-	add hl, de
-	ld a, [hl]
-	cp c
-	jr z, .continue
-	jr c, .below
-	inc c
-	jr .continue
-
-.below
-	dec c
-
-.continue
-	ld hl, OBJECT_MAP_X
-	add hl, de
-	ld [hl], b
-	ld a, b
-	ld hl, wXCoord
-	sub [hl]
-	and $f
-	swap a
-	ld hl, wPlayerBGMapOffsetX
-	sub [hl]
-	ld hl, OBJECT_SPRITE_X
-	add hl, de
-	ld [hl], a
-	ld hl, OBJECT_MAP_Y
-	add hl, de
-	ld [hl], c
-	ld a, c
-	ld hl, wYCoord
-	sub [hl]
-	and $f
-	swap a
-	ld hl, wPlayerBGMapOffsetY
-	sub [hl]
-	ld hl, OBJECT_SPRITE_Y
-	add hl, de
-	ld [hl], a
-	ldh a, [hObjectStructIndex]
-	ld hl, OBJECT_RANGE
-	add hl, de
-	ld [hl], a
-	ld hl, OBJECT_MOVEMENT_TYPE
-	add hl, de
-	ld [hl], SPRITEMOVEDATA_FOLLOWNOTEXACT
-	ld hl, OBJECT_STEP_TYPE
-	add hl, de
-	ld [hl], STEP_TYPE_RESET
-	ret
-
-GetRelativeFacing::
-; Determines which way map object e would have to turn to face map object d.  Returns carry if it's impossible for whatever reason.
+GetRelativeFacing:: ; Determines which way map object e would have to turn to face map object d. Returns carry if it's impossible for whatever reason. If successful, returns the facing direction in d. THIS ONLY WORKS IF THE TWO OBJECTS SHARE A COORDINATE
 	ld a, d
 	call GetMapObject
 	ld hl, MAPOBJECT_OBJECT_STRUCT_ID
@@ -716,84 +638,69 @@ GetRelativeFacing::
 	scf
 	ret
 
-.GetFacing_e_relativeto_d:
-; Determines which way object e would have to turn to face object d.  Returns carry if it's impossible.
-; load the coordinates of object d into bc
+.GetFacing_e_relativeto_d: ; Determines which way object e would have to turn to face object d. Returns carry if it's impossible. If successful, returns the facing direction in d
+; load the pointer to the coordinates of object d into bc
 	ld a, d
 	call GetObjectStruct
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
-	ld a, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld c, [hl]
-	ld b, a
+	ld b, h
+	ld c, l
 	push bc
-; load the coordinates of object e into de
+; load the pointer to the coordinates of object e into hl
 	ld a, e
 	call GetObjectStruct
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
-	pop bc
-; |x1 - x2|
-	ld a, b
-	sub d
-	jr z, .same_x_1
-	jr nc, .b_right_of_d_1
-	cpl
-	inc a
+	pop bc ; if the fucking register pressure gets any higher it's gonna start trying to sell me drugs
 
-.b_right_of_d_1
-; |y1 - y2|
-	ld h, a
-	ld a, c
-	sub e
-	jr z, .same_y_1
-	jr nc, .c_below_e_1
-	cpl
-	inc a
+.checkX
+	ld a, [bc] ; high byte of x coordinate of object d
+	cp a, [hl] ; high byte of x coordinate of object e
+	jr c, .left; a is less than hl
+	jr nz, .right
+	inc bc
+	inc hl
+	ld a, [bc]
+	cp a, [hl]
+	jr c, .left
+	jr z, .checkY
 
-.c_below_e_1
-; |y1 - y2| - |x1 - x2|
-	sub h
-	jr c, .same_y_1
-
-.same_x_1
-; compare the y coordinates
-	ld a, c
-	cp e
-	jr z, .same_x_and_y
-	jr c, .c_directly_below_e
-; c directly above e
-	ld d, DOWN
-	and a
-	ret
-
-.c_directly_below_e
-	ld d, UP
-	and a
-	ret
-
-.same_y_1
-	ld a, b
-	cp d
-	jr z, .same_x_and_y
-	jr c, .b_directly_right_of_d
-; b directly left of d
+.right
 	ld d, RIGHT
 	and a
 	ret
 
-.b_directly_right_of_d
+.left
 	ld d, LEFT
 	and a
 	ret
 
-.same_x_and_y
+.checkY
+	inc bc
+	inc hl
+	ld a, [bc]
+	cp a, [hl]
+	jr c, .up
+	jr nz, .down
+	inc bc
+	inc hl
+	ld a, [bc]
+	cp a, [hl]
+	jr c,  .up
+	jr z, .sameXY
+
+.down
+	ld d, DOWN
+	and a
+	ret
+
+.up
+	ld d, UP
+	and a
+	ret
+
+.sameXY
 	scf
 	ret
 
@@ -810,23 +717,38 @@ QueueFollowerFirstStep:
 	ld [wFollowerMovementQueueLength], a
 	ret
 
-.QueueFirstStep:
+.QueueFirstStep: ; returns movement_step + direction in a, sets carry if x and y are already equal
 	ld a, [wObjectFollow_Leader]
 	call GetObjectStruct
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH ; Leader object X
 	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
+	ld b, [hl] ; bc has the x corodinate
+	inc hl
+	ld c, [hl]
+
+	inc hl
+	ld d, [hl] ; de has the y coordinate
+	inc hl
 	ld e, [hl]
+
 	ld a, [wObjectFollow_Follower]
+	push bc
 	call GetObjectStruct
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, d
-	cp [hl]
-	jr z, .check_y
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc ; hl now has a pointer to the follower object's high x coordinate
+	pop bc 
+
+	ld a, b ; leader x coord (high)
+	cp a, [hl]
+	jr c, .left 
+	jr nz, .right
+	inc hl
+	ld a, c
+	cp a, [hl]
 	jr c, .left
+	jr z, .check_y
+
+.right ; fallthrough
 	and a
 	ld a, movement_step + RIGHT
 	ret
@@ -837,12 +759,18 @@ QueueFollowerFirstStep:
 	ret
 
 .check_y
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, e
+	inc hl
+	ld a, d
 	cp [hl]
+	jr c, .up
+	jr nz, .down
+	inc hl
+	ld a, e ; leader y coord (high)
+	cp [hl] ; hl points to the follower's coordinates
 	jr z, .same_xy
 	jr c, .up
+
+.down ; fallthrough
 	and a
 	ld a, movement_step + DOWN
 	ret

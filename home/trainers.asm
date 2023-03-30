@@ -2,7 +2,7 @@ CheckTrainerBattle::
 	ldh a, [hROMBank]
 	push af
 
-	call SwitchToMapScriptsBank
+	;call SwitchToMapScriptsBank
 	call _CheckTrainerBattle
 
 	pop bc
@@ -107,7 +107,7 @@ TalkToTrainer::
 	ld [wSeenTrainerDirection], a
 
 LoadTrainer_continue::
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	ld [wSeenTrainerBank], a
 
 	ldh a, [hLastTalked]
@@ -138,61 +138,103 @@ FacingPlayerDistance::
 ; Return carry if the sprite at bc is facing the player,
 ; its distance in d, and its direction in e.
 
-	ld hl, OBJECT_MAP_X ; x
+	ld hl, OBJECT_MAP_X_HIGH ; x
 	add hl, bc
-	ld d, [hl]
+	push bc ; save bc for later
+	ld a, [hli] ; load all 16 bits
+	ld b, a
+	ld a, [hli]
+	ld c, a
+	ld a, [hli]
+	ld d, a
+	ld a, [hl]
+	ld e, a
 
-	ld hl, OBJECT_MAP_Y ; y
-	add hl, bc
-	ld e, [hl]
+	ld a, [wChunkX]
+	cp a, b
+	jr nz, .badY
+	ld a, [wChunkX + 1]
+	cp a, c
+	jr z, .CheckY ; fallthrough
 
-	ld a, [wPlayerMapX]
-	cp d
-	jr z, .CheckY
+.badY:
+	ld a, [wYCoord]
+	cp a, d
+	jr nz, .badX
+	ld a, [wYCoord + 1]
+	cp a, e
+	jr z, .CheckX ; fallthrough and escape
 
-	ld a, [wPlayerMapY]
-	cp e
-	jr z, .CheckX
-
-	and a
+.badX:
+	and a ; if none of the coordinates match then we know for sure the object isn't facing the player
 	ret
 
 .CheckY:
-	ld a, [wPlayerMapY]
-	sub e
-	jr z, .NotFacing
+	ld a, [wYCoord]
+	ld h, a
+	ld a, [wYCoord + 1]
+	ld l, a
+	ld a, d
+	cpl
+	ld d, a
+	ld a, e
+	cpl
+	ld e, a
+	inc de
+	add hl, de ; subtract the sprite's y coord from wYCoord
 	jr nc, .Above
 
 ; Below
+	ld a, h
 	cpl
-	inc a
-	ld d, a
+	ld h, a
+	ld a, l
+	cpl
+	ld l, a
+	inc hl
+	ld d, l
 	ld e, OW_UP
 	jr .CheckFacing
 
 .Above:
-	ld d, a
+	ld d, l
 	ld e, OW_DOWN
 	jr .CheckFacing
 
 .CheckX:
-	ld a, [wPlayerMapX]
-	sub d
-	jr z, .NotFacing
+	ld a, [wYCoord]
+	ld h, a
+	ld a, [wYCoord + 1]
+	ld l, a
+	ld a, b
+	cpl
+	ld b, a
+	ld a, c
+	cpl
+	ld c, a
+	inc bc
+	add hl, bc ; subtract the sprite's y coord from wYCoord
 	jr nc, .Left
 
-; Right
+; Below
+	ld a, h
 	cpl
-	inc a
-	ld d, a
+	ld h, a
+	ld a, l
+	cpl
+	ld l, a
+	inc hl
+	ld d, l
 	ld e, OW_LEFT
 	jr .CheckFacing
 
 .Left:
-	ld d, a
+	ld d, l
 	ld e, OW_RIGHT
+	jr .CheckFacing
 
 .CheckFacing:
+	pop bc
 	call GetSpriteDirection
 	cp e
 	jr nz, .NotFacing
@@ -201,30 +243,6 @@ FacingPlayerDistance::
 
 .NotFacing:
 	and a
-	ret
-
-CheckTrainerFlag:: ; unreferenced
-	push bc
-	ld hl, OBJECT_MAP_OBJECT_INDEX
-	add hl, bc
-	ld a, [hl]
-	call GetMapObject
-	ld hl, MAPOBJECT_SCRIPT_POINTER
-	add hl, bc
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	call GetMapScriptsBank
-	call GetFarWord
-	ld d, h
-	ld e, l
-	push de
-	ld b, CHECK_FLAG
-	call EventFlagAction
-	pop de
-	ld a, c
-	and a
-	pop bc
 	ret
 
 PrintWinLossText::
@@ -248,7 +266,7 @@ PrintWinLossText::
 	ld a, [hli]
 	ld h, [hl]
 	ld l, a
-	call GetMapScriptsBank
+	; call GetMapScriptsBank
 	call FarPrintText
 	call WaitBGMap
 	call WaitPressAorB_BlinkCursor

@@ -890,29 +890,6 @@ _MailMovedFromBoxText::
 	line "from the MAILBOX."
 	prompt
 
-_YesPromptText:: ; unreferenced
-	text "Yes"
-	prompt
-
-_NoPromptText:: ; unreferenced
-	text "No"
-	prompt
-
-_AnimationTypeText:: ; unreferenced
-	text_decimal wcf64, 1, 3
-	text " @"
-	text_ram wStringBuffer1
-	text_start
-	line "Animation type @"
-	text_ram wStringBuffer2
-	text_end
-
-	text_end ; unreferenced
-
-_MonNumberText:: ; unreferenced
-	text "#MON number?"
-	done
-
 _WasSentToBillsPCText::
 	text_ram wStringBuffer1
 	text " was"

@@ -1,0 +1,5 @@
+Map block header struct
+0x0: Charblock bank
+0x1-0x2: Charblock pointer within bank
+0x3: Tilemap bank
+0x4-0x5: Tilemap pointer

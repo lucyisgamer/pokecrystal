@@ -757,13 +757,6 @@ MACRO turnobject
 	db \2 ; facing
 ENDM
 
-	const follownotexact_command ; $77
-MACRO follownotexact
-	db follownotexact_command
-	db \1 ; object2
-	db \2 ; object1
-ENDM
-
 	const earthquake_command ; $78
 MACRO earthquake
 	db earthquake_command
@@ -889,11 +882,6 @@ ENDM
 MACRO sdefer
 	db sdefer_command
 	dw \1 ; pointer
-ENDM
-
-	const warpcheck_command ; $8e
-MACRO warpcheck
-	db warpcheck_command
 ENDM
 
 	const stopandsjump_command ; $8f

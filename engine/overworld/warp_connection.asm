@@ -1,5 +1,4 @@
 HandleNewMap:
-	call ClearUnusedMapBuffer
 	call ResetMapBufferEventFlags
 	call ResetFlashIfOutOfCave
 	call GetCurrentMapSceneID
@@ -12,141 +11,6 @@ HandleContinueMap:
 	call RunMapCallback
 	call GetMapTimeOfDay
 	ld [wMapTimeOfDay], a
-	ret
-
-EnterMapConnection:
-; Return carry if a connection has been entered.
-	ld a, [wPlayerStepDirection]
-	and a ; DOWN
-	jp z, .south
-	cp UP
-	jp z, .north
-	cp LEFT
-	jp z, .west
-	cp RIGHT
-	jp z, .east
-	ret
-
-.west
-	ld a, [wWestConnectedMapGroup]
-	ld [wMapGroup], a
-	ld a, [wWestConnectedMapNumber]
-	ld [wMapNumber], a
-	ld a, [wWestConnectionStripXOffset]
-	ld [wXCoord], a
-	ld a, [wWestConnectionStripYOffset]
-	ld hl, wYCoord
-	add [hl]
-	ld [hl], a
-	ld c, a
-	ld hl, wWestConnectionWindow
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	srl c
-	jr z, .skip_to_load
-	ld a, [wWestConnectedMapWidth]
-	add 6
-	ld e, a
-	ld d, 0
-
-.loop
-	add hl, de
-	dec c
-	jr nz, .loop
-
-.skip_to_load
-	ld a, l
-	ld [wOverworldMapAnchor], a
-	ld a, h
-	ld [wOverworldMapAnchor + 1], a
-	jp .done
-
-.east
-	ld a, [wEastConnectedMapGroup]
-	ld [wMapGroup], a
-	ld a, [wEastConnectedMapNumber]
-	ld [wMapNumber], a
-	ld a, [wEastConnectionStripXOffset]
-	ld [wXCoord], a
-	ld a, [wEastConnectionStripYOffset]
-	ld hl, wYCoord
-	add [hl]
-	ld [hl], a
-	ld c, a
-	ld hl, wEastConnectionWindow
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	srl c
-	jr z, .skip_to_load2
-	ld a, [wEastConnectedMapWidth]
-	add 6
-	ld e, a
-	ld d, 0
-
-.loop2
-	add hl, de
-	dec c
-	jr nz, .loop2
-
-.skip_to_load2
-	ld a, l
-	ld [wOverworldMapAnchor], a
-	ld a, h
-	ld [wOverworldMapAnchor + 1], a
-	jp .done
-
-.north
-	ld a, [wNorthConnectedMapGroup]
-	ld [wMapGroup], a
-	ld a, [wNorthConnectedMapNumber]
-	ld [wMapNumber], a
-	ld a, [wNorthConnectionStripYOffset]
-	ld [wYCoord], a
-	ld a, [wNorthConnectionStripXOffset]
-	ld hl, wXCoord
-	add [hl]
-	ld [hl], a
-	ld c, a
-	ld hl, wNorthConnectionWindow
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	ld b, 0
-	srl c
-	add hl, bc
-	ld a, l
-	ld [wOverworldMapAnchor], a
-	ld a, h
-	ld [wOverworldMapAnchor + 1], a
-	jp .done
-
-.south
-	ld a, [wSouthConnectedMapGroup]
-	ld [wMapGroup], a
-	ld a, [wSouthConnectedMapNumber]
-	ld [wMapNumber], a
-	ld a, [wSouthConnectionStripYOffset]
-	ld [wYCoord], a
-	ld a, [wSouthConnectionStripXOffset]
-	ld hl, wXCoord
-	add [hl]
-	ld [hl], a
-	ld c, a
-	ld hl, wSouthConnectionWindow
-	ld a, [hli]
-	ld h, [hl]
-	ld l, a
-	ld b, 0
-	srl c
-	add hl, bc
-	ld a, l
-	ld [wOverworldMapAnchor], a
-	ld a, h
-	ld [wOverworldMapAnchor + 1], a
-.done
-	scf
 	ret
 
 EnterMapWarp:
@@ -208,14 +72,6 @@ EnterMapWarp:
 	ld b, a
 	ld a, [wNextMapNumber]
 	ld c, a
-
-; Respawn in Pokémon Centers.
-	call GetAnyMapTileset
-	ld a, c
-	cp TILESET_POKECENTER
-	jr z, .pokecenter_pokecom
-	cp TILESET_POKECOM_CENTER
-	jr z, .pokecenter_pokecom
 	ret
 .pokecenter_pokecom
 
@@ -225,7 +81,7 @@ EnterMapWarp:
 	ld [wLastSpawnMapNumber], a
 	ret
 
-LoadMapTimeOfDay:
+LoadMapTimeOfDay::
 	ld hl, wVramState
 	res 6, [hl]
 	ld a, $1
@@ -296,7 +152,7 @@ LoadMapTimeOfDay:
 	ldh [rVBK], a
 	ret
 
-LoadMapGraphics:
+LoadMapGraphics::
 	call LoadMapTileset
 	call LoadTilesetGFX
 	xor a
@@ -308,11 +164,11 @@ LoadMapGraphics:
 	farcall LoadOverworldFont
 	ret
 
-LoadMapPalettes:
+LoadMapPalettes::
 	ld b, SCGB_MAPPALS
 	jp GetSGBLayout
 
-RefreshMapSprites:
+RefreshMapSprites::
 	call ClearSprites
 	farcall InitMapNameSign
 	call GetMovementPermissions
@@ -328,105 +184,4 @@ RefreshMapSprites:
 	ld a, [wPlayerSpriteSetupFlags]
 	and (1 << PLAYERSPRITESETUP_FEMALE_TO_MALE_F) | (1 << 3) | (1 << 4)
 	ld [wPlayerSpriteSetupFlags], a
-	ret
-
-CheckMovingOffEdgeOfMap::
-	ld a, [wPlayerStepDirection]
-	cp STANDING
-	ret z
-	and a ; DOWN
-	jr z, .down
-	cp UP
-	jr z, .up
-	cp LEFT
-	jr z, .left
-	cp RIGHT
-	jr z, .right
-	and a
-	ret
-
-.down
-	ld a, [wPlayerMapY]
-	sub 4
-	ld b, a
-	ld a, [wMapHeight]
-	add a
-	cp b
-	jr z, .ok
-	and a
-	ret
-
-.up
-	ld a, [wPlayerMapY]
-	sub 4
-	cp -1
-	jr z, .ok
-	and a
-	ret
-
-.left
-	ld a, [wPlayerMapX]
-	sub 4
-	cp -1
-	jr z, .ok
-	and a
-	ret
-
-.right
-	ld a, [wPlayerMapX]
-	sub 4
-	ld b, a
-	ld a, [wMapWidth]
-	add a
-	cp b
-	jr z, .ok
-	and a
-	ret
-
-.ok
-	scf
-	ret
-
-GetMapScreenCoords::
-	ld hl, wOverworldMapBlocks
-	ld a, [wXCoord]
-	bit 0, a
-	jr nz, .odd_x
-; even x
-	srl a
-	add 1
-	jr .got_block_x
-.odd_x
-	add 1
-	srl a
-.got_block_x
-	ld c, a
-	ld b, 0
-	add hl, bc
-	ld a, [wMapWidth]
-	add MAP_CONNECTION_PADDING_WIDTH * 2
-	ld c, a
-	ld b, 0
-	ld a, [wYCoord]
-	bit 0, a
-	jr nz, .odd_y
-; even y
-	srl a
-	add 1
-	jr .got_block_y
-.odd_y
-	add 1
-	srl a
-.got_block_y
-	call AddNTimes
-	ld a, l
-	ld [wOverworldMapAnchor], a
-	ld a, h
-	ld [wOverworldMapAnchor + 1], a
-	ld a, [wYCoord]
-	and 1
-	ld [wPlayerMetatileY], a
-	ld a, [wXCoord]
-	and 1
-	ld [wPlayerMetatileX], a
 	ret

@@ -48,29 +48,99 @@ AppendToMovementBufferNTimes::
 	jr nz, .loop
 	ret
 
-ComputePathToWalkToPlayer::
-	push af
-; compare x coords, load left/right into h, and x distance into d
-	ld a, b
-	sub d
-	ld h, LEFT
-	jr nc, .got_x_distance
-	dec a
-	cpl
-	ld h, RIGHT
+ComputePathToWalkToPlayer:: ; Note: this only works if the object is less than 128 tiles away from the player. Shouldn't be a problem due to objects unloading
+	push af ; Player coords are pointed to by de, object coords that need to path to player are pointed to by bc
+	ld h, d
+	ld l, e
+; compare x coords, load left/right into top bit of d, and distance into the bottom 7 bits
+	inc bc
+	inc hl
+	ld a, [bc] ; high x coord of the object trying to reach the player
+	sub a, [hl] ; follower - player
+	ld e, a ; low byte of difference is in e
 
-.got_x_distance
+	dec bc
+	dec hl
+	ld a, [bc]
+	sbc a, [hl]
+	ld d, a ; de now contains the difference between the follower's x pos and the player's
+
+	jr nc, .left ; follower needs to move left to get to player
+	dec de ; decrement and complement de to invert it
+	ld a, d
+	cpl
 	ld d, a
-; compare y coords, load up/down into l, and y distance into e
-	ld a, c
-	sub e
-	ld l, UP
-	jr nc, .got_y_distance
-	dec a
+	ld a, e
 	cpl
-	ld l, DOWN
+	ld e, a ; fallthrough to .right
+	
+.right
+	ld d, e
+	set $07, d ; set top bit of d to indicate that we need to move right to get to the player
+	push de
+	jr .checkY
 
-.got_y_distance
+.left
+	ld d, e
+	res $07, d
+	push de
+
+.checkY
+	inc hl ; bruh
+	inc hl ; i
+	inc hl ; want
+	inc bc ; to
+	inc bc ; fucking
+	inc bc ; die
+
+	ld a, [bc]
+	sub a, [hl] ; follower - player y
+	ld e, a
+
+	dec bc
+	dec hl
+	ld a, [bc]
+	sbc a, [hl]
+	ld d, a
+
+	jr nc, .up ; follower needs to move up to get to player
+	dec de
+	ld a, d
+	cpl
+	ld d, a
+	ld a, e
+	cpl
+	ld e, a
+
+.down
+	res $07, e
+	ld a, e
+	pop de
+	ld e, a
+	jr .distancesFound
+
+.up
+	set $07, e
+	ld a, e
+	pop de
+	ld e, a
+
+.distancesFound
+	bit $07, d ; this converts the data i had earlier into the format expected by the original ending of this routine, so i don't have to rewrite it
+	ld h, RIGHT
+	jr nz, .setRight
+	ld h, LEFT
+.setRight
+	res $07, d
+
+	bit $07, e
+	ld l, UP
+	jr nz, .setUp
+	ld l, DOWN
+.setUp
+	res $07, e
+
+.checkSwap
 	ld e, a
 ; if the x distance is less than the y distance, swap h and l, and swap d and e
 	cp d

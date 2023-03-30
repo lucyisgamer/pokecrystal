@@ -1,5 +1,5 @@
 _Squirtbottle:
-	ld hl, .SquirtbottleScript
+	ld hl, .SquirtbottleScript ; TODO - make this work with the new event system
 	call QueueScript
 	ld a, $1
 	ld [wItemEffectSucceeded], a
@@ -10,7 +10,7 @@ _Squirtbottle:
 	special UpdateTimePals
 	callasm .CheckCanUseSquirtbottle
 	iffalse .SquirtbottleNothingScript
-	farsjump WateredWeirdTreeScript
+	; farsjump WateredWeirdTreeScript
 
 .SquirtbottleNothingScript:
 	jumptext .SquirtbottleNothingText

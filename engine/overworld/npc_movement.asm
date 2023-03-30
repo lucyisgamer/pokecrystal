@@ -4,10 +4,10 @@ CanObjectMoveInDirection:
 	bit SWIMMING_F, [hl]
 	jr z, .not_swimming
 
-; BUG: Swimming NPCs aren't limited by their movement radius (see docs/bugs_and_glitches.md)
 	ld hl, OBJECT_FLAGS1
 	add hl, bc
 	bit NOCLIP_TILES_F, [hl]
+	jr nz, .noclip_tiles
 	push hl
 	push bc
 	call WillObjectBumpIntoLand
@@ -44,12 +44,16 @@ CanObjectMoveInDirection:
 	bit MOVE_ANYWHERE_F, [hl]
 	jr nz, .move_anywhere
 	push hl
+	push bc
 	call HasObjectReachedMovementLimit
+	pop bc
 	pop hl
 	ret c
 
 	push hl
+	push bc
 	call IsObjectMovingOffEdgeOfScreen
+	pop bc
 	pop hl
 	ret c
 
@@ -60,10 +64,10 @@ CanObjectMoveInDirection:
 WillObjectBumpIntoWater:
 	call CanObjectLeaveTile
 	ret c
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_LOW ; these get fed into 
 	add hl, bc
 	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
+	ld hl, OBJECT_MAP_Y_LOW
 	add hl, bc
 	ld e, [hl]
 	ld hl, OBJECT_PALETTE
@@ -228,31 +232,68 @@ WillObjectRemainOnWater:
 
 CheckFacingObject::
 	call GetFacingTileCoord
+	push af ; tile id is in a
 
-; Double the distance for counter tiles.
+	ld bc, wPlayerStruct
+	call GetFacingCoords
+
+	pop af
 	call CheckCounterTile
-	jr nz, .not_counter
+	
+	jr nz, .not_counter ; double the distance for counter tiles
 
-	ld a, [wPlayerMapX]
-	sub d
-	cpl
-	inc a
-	add d
-	ld d, a
+	ld a, [wPlayerStruct + OBJECT_DIRECTION]
+	maskbits NUM_DIRECTIONS, 2
+	and a ; OW_DOWN but more fasterer
+	jr z, .down
+	cp OW_UP
+	jr z, .up
+	cp OW_LEFT
+	jr z, .left
 
-	ld a, [wPlayerMapY]
-	sub e
-	cpl
-	inc a
-	add e
-	ld e, a
+.right
+	inc bc
+	jr .not_counter
+
+.down
+	inc de
+	jr .not_counter
+
+.up
+	dec de
+	jr .not_counter
+
+.left
+	dec bc
 
 .not_counter
-	ld bc, wObjectStructs ; redundant
-	ld a, 0
-	ldh [hMapObjectIndex], a
+
+	ldh a, [rSVBK]
+	ld h, a
+	push hl
+	ld a, BANK(wTempCoordinateBuffer)
+	ldh [rSVBK], a ; switch wram bank
+
+	ld hl, wTempCoordinateBuffer ; put the coordinates into the buffer
+	ld a, b
+	ld [hli], a
+	ld a, c
+	ld [hli], a
+	ld a, d
+	ld [hli], a
+	ld a, e
+	ld [hli], a
+
+	ld de, wTempCoordinateBuffer
+
 	call IsNPCAtCoord
+
+	pop hl
+	ld a, h
+	ldh [rSVBK], a ; switch back to original wram bank
+
 	ret nc
+
 	ld hl, OBJECT_WALKING
 	add hl, bc
 	ld a, [hl]
@@ -265,58 +306,61 @@ CheckFacingObject::
 	scf
 	ret
 
-WillObjectBumpIntoSomeoneElse:
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
-	jr IsNPCAtCoord
 
-IsObjectFacingSomeoneElse: ; unreferenced
-	ldh a, [hMapObjectIndex]
-	call GetObjectStruct
-	call .GetFacingCoords
-	call IsNPCAtCoord
-	ret
 
-.GetFacingCoords:
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
+GetFacingCoords:: ; returns the tile coordinates that the sprite at bc is facing in bc and de
 	call GetSpriteDirection
-	and a ; OW_DOWN?
+
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc ; hl has a pointer to the x coordinate
+	ld b, [hl] ; x is in hl, y is in de
+	inc hl
+	ld c, [hl]
+	inc hl
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
+
+	and a ; OW_DOWN but more faster
 	jr z, .down
 	cp OW_UP
 	jr z, .up
 	cp OW_LEFT
 	jr z, .left
-	; OW_RIGHT
-	inc d
+.right
+	inc bc
 	ret
 
 .down
-	inc e
+	inc de
 	ret
 
 .up
-	dec e
+	dec de
 	ret
 
 .left
-	dec d
+	dec bc
 	ret
 
-IsNPCAtCoord:
+WillObjectBumpIntoSomeoneElse: ; does not preserve any registers
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc
+	ld d, h
+	ld e, l
+
+IsNPCAtCoord: ; expects a refrence to the coords in question in de
 	ld bc, wObjectStructs
 	xor a
 .loop
 	ldh [hObjectStructIndex], a
 	call DoesObjectHaveASprite
+	jr z, .next
+
+	ldh a, [hMapObjectIndex] ; make sure we aren't checking an object against itself
+	ld l, a
+	ldh a, [hObjectStructIndex]
+	cp l
 	jr z, .next
 
 	ld hl, OBJECT_FLAGS1
@@ -330,43 +374,56 @@ IsNPCAtCoord:
 	jr z, .not_big
 	call WillObjectIntersectBigObject
 	jr nc, .check_current_coords
-	jr .continue
+	jr .yes 
 
 .not_big
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
-	ld a, [hl]
-	cp d
+	push de
+	ld a, [de]
+	cp a, [hl]
+	inc de
+	inc hl
 	jr nz, .check_current_coords
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp e
+	ld a, [de]
+	cp a, [hl]
+	inc de
+	inc hl
 	jr nz, .check_current_coords
+	ld a, [de]
+	cp a, [hl]
+	inc de
+	inc hl
+	jr nz, .check_current_coords
+	ld a, [de]
+	cp a, [hl]
+	jr nz, .check_current_coords
+	pop de
+	jr .yes
 
-.continue
-	ldh a, [hMapObjectIndex]
-	ld l, a
-	ldh a, [hObjectStructIndex]
-	cp l
-	jr nz, .yes
-
-.check_current_coords
-	ld hl, OBJECT_LAST_MAP_X
+.check_current_coords ; check against an object's last position for some reason
+	pop de
+	ld hl, OBJECT_LAST_MAP_X_HIGH
 	add hl, bc
-	ld a, [hl]
-	cp d
+	ld a, [de]
+	cp a, [hl]
 	jr nz, .next
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp e
+	inc de
+	inc hl
+	ld a, [de]
+	cp a, [hl]
 	jr nz, .next
-	ldh a, [hMapObjectIndex]
-	ld l, a
-	ldh a, [hObjectStructIndex]
-	cp l
-	jr nz, .yes
+	inc de
+	inc hl
+	ld a, [de]
+	cp a, [hl]
+	jr nz, .next
+	inc de
+	inc hl
+	ld a, [de]
+	cp a, [hl]
+	jr nz, .next
+	jr .yes
 
 .next
 	ld hl, OBJECT_LENGTH
@@ -384,154 +441,77 @@ IsNPCAtCoord:
 	scf
 	ret
 
-HasObjectReachedMovementLimit:
+HasObjectReachedMovementLimit: ; this only works for objects that have moved less than 128 tiles away from their initial position
 	ld hl, OBJECT_RADIUS
 	add hl, bc
 	ld a, [hl]
-	and a
-	jr z, .nope
-	and $f
-	jr z, .check_y
-	ld e, a
-	ld d, a
-	ld hl, OBJECT_INIT_X
+
+	ld hl, OBJECT_INIT_X_HIGH ; initial x coord is in de
 	add hl, bc
-	ld a, [hl]
-	sub d
-	ld d, a
-	ld a, [hl]
-	add e
-	ld e, a
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, [hl]
-	cp d
-	jr z, .yes
-	cp e
-	jr z, .yes
 
-.check_y
-	ld hl, OBJECT_RADIUS
-	add hl, bc
-	ld a, [hl]
-	swap a
-	and $f
-	jr z, .nope
-	ld e, a
-	ld d, a
-	ld hl, OBJECT_INIT_Y
-	add hl, bc
-	ld a, [hl]
-	sub d
-	ld d, a
-	ld a, [hl]
-	add e
-	ld e, a
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp d
-	jr z, .yes
-	cp e
-	jr z, .yes
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
 
-.nope
-	xor a
-	ret
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc ; hl now has a pointer to the current coords of the object
+	push bc ; save our object number for later consumption
 
-.yes
-	scf
-	ret
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
 
-IsObjectMovingOffEdgeOfScreen:
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, [wXCoord]
-	cp [hl]
-	jr z, .check_y
-	jr nc, .yes
-	add $9
-	cp [hl]
-	jr c, .yes
+	scf ; flag that we are checking x right now
 
-.check_y
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [wYCoord]
-	cp [hl]
-	jr z, .nope
-	jr nc, .yes
-	add $8
-	cp [hl]
-	jr c, .yes
-
-.nope
-	and a
-	ret
-
-.yes
-	scf
-	ret
-
-IsNPCAtPlayerCoord: ; unreferenced
-	ld a, [wPlayerMapX]
-	ld d, a
-	ld a, [wPlayerMapY]
-	ld e, a
-	ld bc, wObjectStructs
-	xor a
 .loop
-	ldh [hObjectStructIndex], a
-	call DoesObjectHaveASprite
-	jr z, .next
+	push af 
 
-	ld hl, OBJECT_MOVEMENT_TYPE
-	add hl, bc
-	ld a, [hl]
-	cp SPRITEMOVEDATA_BIGDOLLSYM
-	jr nz, .not_big
-	call WillObjectIntersectBigObject
-	jr c, .yes
-	jr .next
+	ld a, d ; this is just to negate de
+	cpl
+	ld h, a
+	ld a, e
+	cpl
+	ld l, a
+	inc de
 
-.not_big
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp e
-	jr nz, .check_current_coords
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, [hl]
-	cp d
-	jr nz, .check_current_coords
-	ldh a, [hObjectStructIndex]
-	cp PLAYER_OBJECT
-	jr z, .next
-	jr .yes
-
-.check_current_coords
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp e
-	jr nz, .next
-	ld hl, OBJECT_LAST_MAP_X
-	add hl, bc
-	ld a, [hl]
-	cp d
-	jr nz, .next
-	jr .yes
-
-.next
-	ld hl, OBJECT_LENGTH
-	add hl, bc
-	ld b, h
-	ld c, l
-	ldh a, [hObjectStructIndex]
+	add hl, bc ; subtracting
+	bit $07, l
+	jr z, .pos ; if bit 7 is clear then our result was under 127, so we treat it as positive
+	ld a, l
+	cpl
 	inc a
-	cp NUM_OBJECT_STRUCTS
-	jr nz, .loop
+	ld l, a ; fallthrough
+	
+.pos
+	pop af ; get our movement radius
+	push af
+	cp a, l
+	jr c, .yes
+	jr z, .yes
+	pop af ; if our carry flag isn't set, then we must have gone through this twice and not hit the radius at all
+	jr nc, .nope
+
+.checkY
+	pop bc
+
+	ld hl, OBJECT_INIT_Y_HIGH ; initial x coord is in de
+	add hl, bc
+
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
+
+	ld hl, OBJECT_MAP_Y_HIGH
+	add hl, bc ; hl now has a pointer to the current coords of the object
+
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+	and a ; clear the carry flag to signal that we are checking y now
+	jr .loop
+
+
+.nope
 	xor a
 	ret
 
@@ -539,8 +519,70 @@ IsNPCAtPlayerCoord: ; unreferenced
 	scf
 	ret
 
-WillObjectIntersectBigObject:
-	ld hl, OBJECT_MAP_X
+IsObjectMovingOffEdgeOfScreen:: ; note: this is expecting the offset of the object in question to be in bc. also, this routine is obnoxiously long for what it does. god i wish this game used c
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc
+
+ManualScreenCoordCheck:: ; shortcut this so we can reuse this functionality. hl needs to point to the coordinates to check
+	call GetTopLeftScreenCoords ; top left corner coords are now in bc and de
+
+	ld a, [hli]
+	cp a, b ; high x coord
+	jr c, .yes
+	jr nz, .checkYTopLeft
+	ld a, [hl]
+	cp a, c ; low x coord
+	jr c, .yes
+	
+.checkYTopLeft
+	inc hl
+	ld a, [hli]
+	cp a, d ; high y coord
+	jr c, .yes
+	jr nz, .checkBottomRight
+	ld a, [hl]
+	cp a, e ; low y coord
+	jr c, .yes
+	
+.checkBottomRight
+	dec hl
+	dec hl
+	dec hl
+	call GetBottomRightScreenCoords ; bottom right coords are now in bc and de
+
+	ld a, b ; we swap the order of the operands so i can reuse the same jump conditions and don't have to think again
+	cp a, [hl] ; i fucked it up the first time and had to think again
+	inc hl
+	jr c, .yes
+	jr nz, .checkYBottomRight
+	ld a, c
+	cp a, [hl]
+	jr c, .yes
+
+.checkYBottomRight
+	inc hl
+	ld a, d
+	cp a, [hl]
+	inc hl
+	jr c, .yes
+	jr nz, .nope
+	ld a, e
+	cp a, [hl]
+	jr c, .yes
+
+.nope
+	and a
+	ret
+
+.yes ; object will be offscreen
+	scf
+	ret
+
+WillObjectIntersectBigObject: ; stubbed for now. Can rewrite later if needed
+	and a
+	ret
+
+	/*ld hl, OBJECT_MAP_X
 	add hl, bc
 	ld a, d
 	sub [hl]
@@ -559,4 +601,4 @@ WillObjectIntersectBigObject:
 
 .nope
 	and a
-	ret
+	ret*/

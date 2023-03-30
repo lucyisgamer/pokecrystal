@@ -183,7 +183,7 @@ ScriptCommandTable:
 	dw Script_loademote                  ; 74
 	dw Script_showemote                  ; 75
 	dw Script_turnobject                 ; 76
-	dw Script_follownotexact             ; 77
+	; dw Script_unused1                    ; 77
 	dw Script_earthquake                 ; 78
 	dw Script_changemapblocks            ; 79
 	dw Script_changeblock                ; 7a
@@ -206,7 +206,7 @@ ScriptCommandTable:
 	dw Script_pause                      ; 8b
 	dw Script_deactivatefacing           ; 8c
 	dw Script_sdefer                     ; 8d
-	dw Script_warpcheck                  ; 8e
+	; dw Script_unused                     ; 8e
 	dw Script_stopandsjump               ; 8f
 	dw Script_endcallback                ; 90
 	dw Script_end                        ; 91
@@ -444,11 +444,7 @@ Script__2dmenu:
 	ld [wScriptVar], a
 	ret
 
-Script_battletowertext:
-	call SetUpTextbox
-	call GetScriptByte
-	ld c, a
-	farcall BattleTowerText
+Script_battletowertext: ; Stubbed
 	ret
 
 Script_verbosegiveitem:
@@ -840,8 +836,7 @@ UnfreezeFollowerObject:
 	farcall _UnfreezeFollowerObject
 	ret
 
-Script_applymovementlasttalked:
-; apply movement to last talked
+Script_applymovementlasttalked: ; apply movement to last talked
 
 	ldh a, [hLastTalked]
 	ld c, a
@@ -1018,17 +1013,20 @@ Script_stopfollow:
 	farcall StopFollow
 	ret
 
-Script_moveobject:
+Script_moveobject: ; This may end up needing to be rewritten
 	call GetScriptByte
 	call GetScriptObject
 	ld b, a
 	call GetScriptByte
 	add 4
-	ld d, a
+	ld c, a
 	call GetScriptByte
 	add 4
 	ld e, a
-	farcall CopyDECoordsToMapObject
+	ld a, b
+	ld b, $00 ; this only lets us move 8 bits at a time, but that should probably be enough
+	ld d, $00
+	farcall CopyBCDECoordsToMapObject
 	ret
 
 Script_writeobjectxy:
@@ -1040,16 +1038,6 @@ Script_writeobjectxy:
 .ok
 	ld b, a
 	farcall WriteObjectXY
-	ret
-
-Script_follownotexact:
-	call GetScriptByte
-	call GetScriptObject
-	ld b, a
-	call GetScriptByte
-	call GetScriptObject
-	ld c, a
-	farcall FollowNotExact
 	ret
 
 Script_loademote:
@@ -1394,6 +1382,9 @@ Script_sdefer:
 	ld [wDeferredScriptAddr + 1], a
 	ld hl, wScriptFlags
 	set 3, [hl]
+	ret
+
+Script_unused:
 	ret
 
 Script_checkscene:
@@ -2140,7 +2131,7 @@ Script_changemapblocks:
 	ld [wMapBlocksPointer], a
 	call GetScriptByte
 	ld [wMapBlocksPointer + 1], a
-	call ChangeMap
+	; call ChangeMap
 	call BufferScreen
 	ret
 
@@ -2166,16 +2157,6 @@ Script_reloadmappart::
 	call UpdateSprites
 	ret
 
-Script_warpcheck:
-	call WarpCheck
-	ret nc
-	farcall EnableEvents
-	ret
-
-Script_enableevents: ; unreferenced
-	farcall EnableEvents
-	ret
-
 Script_newloadmap:
 	call GetScriptByte
 	ldh [hMapEntryMethod], a
@@ -2198,12 +2179,7 @@ Script_refreshscreen:
 	ret
 
 Script_writeunusedbyte:
-	call GetScriptByte
-	ld [wUnusedScriptByte], a
 	ret
-
-UnusedClosetextScript: ; unreferenced
-	closetext
 
 Script_closetext:
 	call _OpenAndCloseMenu_HDMATransferTilemapAndAttrmap
@@ -2317,8 +2293,6 @@ Script_endall:
 Script_halloffame:
 	ld hl, wGameTimerPaused
 	res GAME_TIMER_PAUSED_F, [hl]
-	farcall StubbedTrainerRankings_HallOfFame
-	farcall StubbedTrainerRankings_HallOfFame2
 	farcall HallOfFame
 	ld hl, wGameTimerPaused
 	set GAME_TIMER_PAUSED_F, [hl]

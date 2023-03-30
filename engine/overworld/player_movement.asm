@@ -53,8 +53,6 @@ DoPlayerMovement::
 	ret c
 	call .TryJump
 	ret c
-	call .CheckWarp
-	ret c
 	jr .NotMoving
 
 .Surf:
@@ -78,8 +76,6 @@ DoPlayerMovement::
 	call .TryStep
 	ret c
 	call .TryJump
-	ret c
-	call .CheckWarp
 	ret c
 	ld a, [wWalkingDirection]
 	cp STANDING
@@ -309,10 +305,6 @@ DoPlayerMovement::
 	scf
 	ret
 
-.unused ; unreferenced
-	xor a
-	ret
-
 .bump
 	xor a
 	ret
@@ -389,49 +381,6 @@ DoPlayerMovement::
 	db FACE_DOWN | FACE_LEFT  ; COLL_HOP_DOWN_LEFT
 	db FACE_UP | FACE_RIGHT   ; COLL_HOP_UP_RIGHT
 	db FACE_UP | FACE_LEFT    ; COLL_HOP_UP_LEFT
-
-.CheckWarp:
-; BUG: No bump noise if standing on tile $3E (see docs/bugs_and_glitches.md)
-
-	ld a, [wWalkingDirection]
-	ld e, a
-	ld d, 0
-	ld hl, .EdgeWarps
-	add hl, de
-	ld a, [wPlayerTile]
-	cp [hl]
-	jr nz, .not_warp
-
-	ld a, TRUE
-	ld [wWalkingIntoEdgeWarp], a
-	ld a, [wWalkingDirection]
-	cp STANDING
-	jr z, .not_warp
-
-	ld e, a
-	ld a, [wPlayerDirection]
-	rrca
-	rrca
-	maskbits NUM_DIRECTIONS
-	cp e
-	jr nz, .not_warp
-	call WarpCheck
-	jr nc, .not_warp
-
-	call .StandInPlace
-	scf
-	ld a, PLAYERMOVEMENT_WARP
-	ret
-
-.not_warp
-	xor a ; PLAYERMOVEMENT_NORMAL
-	ret
-
-.EdgeWarps:
-	db COLL_WARP_CARPET_DOWN
-	db COLL_WARP_CARPET_UP
-	db COLL_WARP_CARPET_LEFT
-	db COLL_WARP_CARPET_RIGHT
 
 .DoStep:
 	ld e, a
@@ -618,20 +567,48 @@ ENDM
 	ld a, 0
 	ldh [hMapObjectIndex], a
 ; Load the next X coordinate into d
-	ld a, [wPlayerMapX]
-	ld d, a
-	ld a, [wWalkingX]
-	add d
-	ld d, a
+	ld a, [rSVBK]
+	push af
+	push bc
+	ld a, BANK(wTempCoordinateBuffer)
+	ld [rSVBK], a
+
+	ld de, wTempCoordinateBuffer + 3 ; point to the end of the coordinate buffer
 ; Load the next Y coordinate into e
-	ld a, [wPlayerMapY]
-	ld e, a
 	ld a, [wWalkingY]
-	add e
-	ld e, a
+	call GetStepVectorSign
+	ld a, [wYCoord]
+	ld h, a
+	ld a, [wYCoord + 1]
+	ld l, a
+	add hl, bc
+	ld a, l
+	ld [de], a
+	dec de
+	ld a, h
+	ld [de], a
+	dec de
+; Compute the next X coord
+	ld a, [wWalkingX]
+	call GetStepVectorSign
+	ld a, [wXCoord]
+	ld h, a
+	ld a, [wXCoord + 1]
+	ld l, a
+	add hl, bc
+	ld a, l
+	ld [de], a
+	dec de ; de should now point to the start of wTempCoordinateBuffer
+	ld a, h
+	ld [de], a
+
 ; Find an object struct with coordinates equal to d,e
-	ld bc, wObjectStructs ; redundant
 	farcall IsNPCAtCoord
+	rl d ; save the carry flag in d for now
+	pop bc
+	pop af
+	ld [rSVBK], a ; swap back to our proper WRAM bank
+	rr d ; get our carry flag back
 	jr nc, .no_npc
 	call .CheckStrengthBoulder
 	jr c, .no_bump
@@ -683,9 +660,7 @@ ENDM
 	xor a
 	ret
 
-.CheckLandPerms:
-; Return 0 if walking onto land and tile permissions allow it.
-; Otherwise, return carry.
+.CheckLandPerms: ; Return 0 if walking onto land and tile permissions allow it. Otherwise, return carry.
 
 	ld a, [wTilePermissions]
 	ld d, a
@@ -704,9 +679,7 @@ ENDM
 	scf
 	ret
 
-.CheckSurfPerms:
-; Return 0 if moving in water, or 1 if moving onto land.
-; Otherwise, return carry.
+.CheckSurfPerms: ; Return 0 if moving in water, or 1 if moving onto land. Otherwise, return carry.
 
 	ld a, [wTilePermissions]
 	ld d, a
@@ -732,18 +705,15 @@ ENDM
 	cp PLAYER_SKATE
 	ret
 
-.CheckWalkable:
-; Return 0 if tile a is land. Otherwise, return carry.
+.CheckWalkable: ; Return 0 if tile a is land. Otherwise, return carry.
 
 	call GetTileCollision
 	and a ; LAND_TILE
 	ret z
-	scf
+	; scf
 	ret
 
-.CheckSurfable:
-; Return 0 if tile a is water, or 1 if land.
-; Otherwise, return carry.
+.CheckSurfable: ; Return 0 if tile a is water, or 1 if land. Otherwise, return carry.
 
 	call GetTileCollision
 	cp WATER_TILE

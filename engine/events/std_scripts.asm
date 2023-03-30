@@ -112,7 +112,6 @@ PokecenterNurseScript:
 
 	farwritetext NurseTakePokemonText
 	pause 20
-	special StubbedTrainerRankings_Healings
 	turnobject LAST_TALKED, LEFT
 	pause 10
 	special HealParty
@@ -302,7 +301,7 @@ RadioTowerRocketsScript:
 	clearevent EVENT_USED_THE_CARD_KEY_IN_THE_RADIO_TOWER
 	setevent EVENT_MAHOGANY_TOWN_POKEFAN_M_BLOCKS_EAST
 	specialphonecall SPECIALCALL_WEIRDBROADCAST
-	setmapscene MAHOGANY_TOWN, SCENE_MAHOGANYTOWN_NOOP
+	; setmapscene MAHOGANY_TOWN, SCENE_MAHOGANYTOWN_NOOP
 	end
 
 BugContestResultsWarpScript:
@@ -359,8 +358,8 @@ BugContestResults_DidNotLeaveMons:
 	waitbutton
 BugContestResults_CleanUp:
 	closetext
-	setscene SCENE_ROUTE36NATIONALPARKGATE_NOOP
-	setmapscene ROUTE_35_NATIONAL_PARK_GATE, SCENE_ROUTE35NATIONALPARKGATE_NOOP
+	; setscene SCENE_ROUTE36NATIONALPARKGATE_NOOP
+	; setmapscene ROUTE_35_NATIONAL_PARK_GATE, SCENE_ROUTE35NATIONALPARKGATE_NOOP
 	setevent EVENT_BUG_CATCHING_CONTESTANT_1A
 	setevent EVENT_BUG_CATCHING_CONTESTANT_2A
 	setevent EVENT_BUG_CATCHING_CONTESTANT_3A

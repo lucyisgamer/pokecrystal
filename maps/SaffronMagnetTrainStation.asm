@@ -36,7 +36,6 @@ SaffronMagnetTrainStationOfficerScript:
 	applymovement PLAYER, SaffronMagnetTrainStationPlayerApproachAndEnterTrainMovement
 	setval TRUE
 	special MagnetTrain
-	warpcheck
 	newloadmap MAPSETUP_TRAIN
 	applymovement PLAYER, .MovementBoardTheTrain
 	wait 20

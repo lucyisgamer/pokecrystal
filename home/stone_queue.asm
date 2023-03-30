@@ -1,8 +1,10 @@
-HandleStoneQueue::
-	ldh a, [hROMBank]
+HandleStoneQueue:: ; STUBBED
+	and a
+	ret ; TODO - make this shit work. Will have to entirely rewrite how the game handles stones, if i even include them
+/*	ldh a, [hROMBank]
 	push af
 
-	call SwitchToMapScriptsBank
+	; call SwitchToMapScriptsBank
 	call .WarpAction
 
 	pop bc
@@ -13,7 +15,7 @@ HandleStoneQueue::
 .WarpAction:
 	ld hl, OBJECT_MAP_OBJECT_INDEX
 	add hl, de
-	ld a, [hl]
+	ld a, $ff ; TODO - figure out a better way to handle strength stones going through holes. Will probably have to modify their struct to include a building and floor id
 	cp $ff
 	jr z, .nope
 
@@ -26,8 +28,8 @@ HandleStoneQueue::
 	ld e, l
 	call .IsObjectInStoneTable
 	jr nc, .nope
-	call CallMapScript
-	farcall EnableScriptMode
+	; call CallMapScript
+	; farcall EnableScriptMode
 	scf
 	ret
 
@@ -135,4 +137,4 @@ HandleStoneQueue::
 
 .yes
 	scf
-	ret
+	ret */

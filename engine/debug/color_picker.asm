@@ -457,9 +457,6 @@ DebugColor_UpdateScreen:
 	ret
 
 DebugColor_UpdatePalettes:
-	ldh a, [hCGB]
-	and a
-	jr z, .sgb
 
 ; cgb
 	ldh a, [rSVBK]
@@ -487,41 +484,6 @@ DebugColor_UpdatePalettes:
 
 	pop af
 	ldh [rSVBK], a
-	ret
-
-.sgb
-	ld hl, wSGBPals
-	ld a, 1
-	ld [hli], a
-	ld a, LOW(PALRGB_WHITE)
-	ld [hli], a
-	ld a, HIGH(PALRGB_WHITE)
-	ld [hli], a
-	ld a, [wDebugLightColor + 0]
-	ld [hli], a
-	ld a, [wDebugLightColor + 1]
-	ld [hli], a
-	ld a, [wDebugDarkColor + 0]
-	ld [hli], a
-	ld a, [wDebugDarkColor + 1]
-	ld [hli], a
-	xor a
-	ld [hli], a
-	ld [hli], a
-	ld [hl], a
-
-	ld hl, wSGBPals
-	call DebugColor_PushSGBPals
-
-	hlcoord 10, 2
-	ld de, wDebugLightColor
-	call DebugColor_PrintHexColor
-	hlcoord 15, 2
-	ld de, wDebugDarkColor
-	call DebugColor_PrintHexColor
-
-	ld a, DEBUGCOLORMAIN_JOYPAD
-	ld [wJumptableIndex], a
 	ret
 
 DebugColor_PrintHexColor:

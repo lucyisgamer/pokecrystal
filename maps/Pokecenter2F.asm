@@ -100,7 +100,6 @@ LinkReceptionistScript_Trade:
 	waitbutton
 	closetext
 	scall Pokecenter2F_CheckGender
-	warpcheck
 	end
 
 .FriendNotReady:
@@ -138,7 +137,6 @@ LinkReceptionistScript_Trade:
 	scall .Mobile_TrySave
 	iftrue .Mobile_Abort
 	scall BattleTradeMobile_WalkIn
-	warpcheck
 	end
 
 .Mobile_Abort:
@@ -202,7 +200,6 @@ LinkReceptionistScript_Battle:
 	waitbutton
 	closetext
 	scall Pokecenter2F_CheckGender
-	warpcheck
 	end
 
 .FriendNotReady:
@@ -242,7 +239,6 @@ LinkReceptionistScript_Battle:
 	scall .Mobile_TrySave
 	iftrue .Mobile_Abort
 	scall BattleTradeMobile_WalkIn
-	warpcheck
 	end
 
 .Mobile_Abort:
@@ -335,7 +331,6 @@ LinkReceptionistScript_TimeCapsule:
 	waitbutton
 	closetext
 	scall TimeCapsuleScript_CheckPlayerGender
-	warpcheck
 	end
 
 .FriendNotReady:

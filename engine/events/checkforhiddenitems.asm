@@ -1,12 +1,15 @@
-CheckForHiddenItems:
+CheckForHiddenItems: ; this entire funtion will likely need to be rewritten. Maybe store hidden items per-chunk?
 ; Checks to see if there are hidden items on the screen that have not yet been found.  If it finds one, returns carry.
-	call GetMapScriptsBank
+	scf ; Dummy this function out - TODO - make this dynamic
+	ccf 
+	ret
+	; call GetMapScriptsBank
 	ld [wCurMapScriptBank], a
 ; Get the coordinate of the bottom right corner of the screen, and load it in wBottomRightYCoord/wBottomRightXCoord.
-	ld a, [wXCoord]
+	ld a, [wXCoord] ; TODO - this needs to be extended to 16 bit
 	add SCREEN_WIDTH / 4
 	ld [wBottomRightXCoord], a
-	ld a, [wYCoord]
+	ld a, [wYCoord] ; TODO - this needs to be extended to 16 bit
 	add SCREEN_HEIGHT / 4
 	ld [wBottomRightYCoord], a
 ; Get the pointer for the first bg_event in the map...

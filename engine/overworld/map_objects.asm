@@ -36,53 +36,22 @@ HandleObjectStep:
 CheckObjectStillVisible:
 	ld hl, OBJECT_FLAGS2
 	add hl, bc
-	res OBJ_FLAGS2_6, [hl]
-	ld a, [wXCoord]
-	ld e, a
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld a, [hl]
-	add 1
-	sub e
-	jr c, .ok
-	cp MAPOBJECT_SCREEN_WIDTH
-	jr nc, .ok
-	ld a, [wYCoord]
-	ld e, a
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	add 1
-	sub e
-	jr c, .ok
-	cp MAPOBJECT_SCREEN_HEIGHT
-	jr nc, .ok
-	jr .yes
+	res OBJ_FLAGS2_6, [hl] ; I have absolutely no idea why this fucking flag is getting reset
+	push bc
+	farcall IsObjectMovingOffEdgeOfScreen ; hooray for reusing existing functionality
+	pop bc
+	jr nc, .yes
 
-.ok
+.ok ; this seems to be checking if the object's initial position is moving off the edge of the screen
 	ld hl, OBJECT_FLAGS2
 	add hl, bc
 	set OBJ_FLAGS2_6, [hl]
-	ld a, [wXCoord]
-	ld e, a
-	ld hl, OBJECT_INIT_X
+	ld hl, OBJECT_INIT_X_HIGH
 	add hl, bc
-	ld a, [hl]
-	add 1
-	sub e
+	push bc
+	farcall ManualScreenCoordCheck
+	pop bc
 	jr c, .ok2
-	cp MAPOBJECT_SCREEN_WIDTH
-	jr nc, .ok2
-	ld a, [wYCoord]
-	ld e, a
-	ld hl, OBJECT_INIT_Y
-	add hl, bc
-	ld a, [hl]
-	add 1
-	sub e
-	jr c, .ok2
-	cp MAPOBJECT_SCREEN_HEIGHT
-	jr nc, .ok2
 .yes
 	and a
 	ret
@@ -163,7 +132,6 @@ HandleFrozenObjectAction:
 _CallFrozenObjectAction:
 ; use second column (frozen)
 	ld de, ObjectActionPairPointers + 2
-	jr CallObjectAction ; pointless
 
 CallObjectAction:
 	ld hl, OBJECT_ACTION
@@ -183,18 +151,26 @@ CallObjectAction:
 INCLUDE "engine/overworld/map_object_action.asm"
 
 CopyCoordsTileToLastCoordsTile:
-	ld hl, OBJECT_MAP_X
+	; we're copying the current coords to the last coords for some reason that eludes me. oh well
+	ld hl, OBJECT_LAST_MAP_X_HIGH
 	add hl, bc
+	ld d, h
+	ld e, l
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
 	ld a, [hl]
-	ld hl, OBJECT_LAST_MAP_X
-	add hl, bc
-	ld [hl], a
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	ld [hl], a
+	ld [de], a
+	
+
 	ld hl, OBJECT_TILE
 	add hl, bc
 	ld a, [hl]
@@ -205,22 +181,26 @@ CopyCoordsTileToLastCoordsTile:
 	ld hl, OBJECT_TILE
 	add hl, bc
 	ld a, [hl]
-	call UselessAndA
 	ret
 
 CopyLastCoordsToCoords:
-	ld hl, OBJECT_LAST_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
+	ld d, h
+	ld e, l
+	ld hl, OBJECT_LAST_MAP_X_HIGH
+	add hl, bc
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hli]
+	ld [de], a
+	inc de
 	ld a, [hl]
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld [hl], a
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld [hl], a
+	ld [de], a
 	ret
 
 UpdateTallGrassFlags:
@@ -236,12 +216,9 @@ UpdateTallGrassFlags:
 	ld hl, OBJECT_TILE
 	add hl, bc
 	ld a, [hl]
-	call UselessAndA
-	ret c ; never happens
 	ld hl, OBJECT_LAST_TILE
 	add hl, bc
 	ld a, [hl]
-	call UselessAndA
 	ret
 
 SetTallGrassFlags:
@@ -259,10 +236,6 @@ SetTallGrassFlags:
 	ld hl, OBJECT_FLAGS2
 	add hl, bc
 	res OVERHEAD_F, [hl]
-	ret
-
-UselessAndA:
-	and a
 	ret
 
 EndSpriteMovement:
@@ -297,30 +270,60 @@ InitStep:
 	ld [hl], a
 	; fallthrough
 
-GetNextTile:
+GetNextTile: ; if the object format ever changes significantly, this function will break in spectacular fashion
 	call GetStepVector
 	ld hl, OBJECT_STEP_DURATION
 	add hl, bc
 	ld [hl], a
 	ld a, d
-	call GetStepVectorSign
-	ld hl, OBJECT_LAST_MAP_X
+
+
+	ld hl, OBJECT_LAST_MAP_X_LOW
 	add hl, bc
-	add [hl]
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld [hl], a
-	ld d, a
-	ld a, e
-	call GetStepVectorSign
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	add [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld [hl], a
-	ld e, a
 	push bc
+	ld bc, $0000
+	call GetStepVectorSign ; add step vector sign to last map position
+	ld a, [hld] ; do this backwards so we can save some time incrementing and decrementing
+	add a, c
+	ld c, a
+	ld a, [hld] ; de now has the old coordinates
+	adc a, b ; bc now has our new position
+	ld b, a
+	dec hl
+	dec hl
+	ld [hl], c
+	dec hl
+	ld [hl], b ; our current position should now be in the correct field
+
+	
+
+	pop bc
+	ld hl, OBJECT_LAST_MAP_Y_LOW
+	add hl, bc
+	push bc
+	ld a, e ; get the y step vector
+	ld bc, $0000
+	call GetStepVectorSign
+	ld a, [hld] ; do this backwards so we can save some time incrementing and decrementing
+	add a, c
+	ld c, a
+	ld a, [hld] ; de now has the old coordinates
+	adc a, b ; bc now has our new position
+	ld b, a
+	dec hl
+	dec hl
+	ld [hl], c
+	dec hl
+	ld [hl], b ; our current position should now be in the correct field
+	
+	;hl now points to the high byte of y
+	; need low x in d and low y in e
+	dec hl
+	ld a, [hli]
+	ld d, a
+	inc hl
+	ld e, [hl]
+
 	call GetCoordTile
 	pop bc
 	ld hl, OBJECT_TILE
@@ -342,8 +345,7 @@ AddStepVector:
 	ld [hl], a
 	ret
 
-GetStepVector:
-; Return (x, y, duration, speed) in (d, e, a, h).
+GetStepVector: ; Return (x, y, duration, speed) in (d, e, a, h).
 	ld hl, OBJECT_WALKING
 	add hl, bc
 	ld a, [hl]
@@ -362,8 +364,7 @@ GetStepVector:
 	ld h, [hl]
 	ret
 
-StepVectors:
-; x,  y, duration, speed
+StepVectors: ; x,  y, duration, speed
 	; slow
 	db  0,  1, 16, 1
 	db  0, -1, 16, 1
@@ -383,9 +384,9 @@ StepVectors:
 GetStepVectorSign:
 	add a
 	ret z  ; 0 or 128 (-128)
-	ld a, 1
+	ld bc, 1
 	ret nc ; +1 to +127
-	ld a, -1
+	ld bc, -1
 	ret    ; -127 to -1
 
 UpdatePlayerStep:
@@ -495,11 +496,11 @@ ObjectStep_SetAnonJumptableIndex: ; unreferenced
 	ret
 
 StepFunction_Reset:
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_LOW
 	add hl, bc
 	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
+	inc hl
+	inc hl
 	ld e, [hl]
 	push bc
 	call GetCoordTile
@@ -543,7 +544,7 @@ StepFunction_FromMovement:
 	dw MovementFunction_Follow               ; 0f
 	dw MovementFunction_Script               ; 10
 	dw MovementFunction_Strength             ; 11
-	dw MovementFunction_FollowNotExact       ; 12
+	dw MovementFunction_Unused1              ; 12
 	dw MovementFunction_Shadow               ; 13
 	dw MovementFunction_Emote                ; 14
 	dw MovementFunction_BigStanding          ; 15
@@ -699,66 +700,7 @@ MovementFunction_Strength:
 	ld [hl], STANDING
 	ret
 
-MovementFunction_FollowNotExact:
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
-	ld hl, OBJECT_RANGE
-	add hl, bc
-	ld a, [hl]
-	push bc
-	call GetObjectStruct
-	ld hl, OBJECT_WALKING
-	add hl, bc
-	ld a, [hl]
-	cp STANDING
-	jr z, .standing
-	ld hl, OBJECT_LAST_MAP_X
-	add hl, bc
-	ld a, [hl]
-	cp d
-	jr z, .equal
-	jr c, .less
-	ld a, 3
-	jr .done
-
-.less
-	ld a, 2
-	jr .done
-
-.equal
-	ld hl, OBJECT_LAST_MAP_Y
-	add hl, bc
-	ld a, [hl]
-	cp e
-	jr z, .standing
-	jr c, .less2
-	ld a, 0
-	jr .done
-
-.less2
-	ld a, 1
-.done
-	ld d, a
-	ld hl, OBJECT_WALKING
-	add hl, bc
-	ld a, [hl]
-	and %00001100
-	or d
-	pop bc
-	jp NormalStep
-
-.standing
-	pop bc
-	ld hl, OBJECT_WALKING
-	add hl, bc
-	ld [hl], STANDING
-	ld hl, OBJECT_ACTION
-	add hl, bc
-	ld [hl], OBJECT_ACTION_STAND
+MovementFunction_Unused1:
 	ret
 
 MovementFunction_BigStanding:
@@ -1653,17 +1595,23 @@ StepFunction_StrengthBoulder:
 	dec [hl]
 	ret nz
 	push bc
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
+
 	ld hl, OBJECT_MAP_OBJECT_INDEX
 	add hl, bc
 	ld a, [hl]
-	ld b, a
-	farcall CopyDECoordsToMapObject
+	push af
+
+	ld hl, OBJECT_MAP_X_HIGH
+	add hl, bc
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+	inc hl
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
+	pop af
+	farcall CopyBCDECoordsToMapObject
 	pop bc
 	ld hl, OBJECT_FLAGS2
 	add hl, bc
@@ -2134,7 +2082,7 @@ InitTempObject:
 
 CopyTempObjectData:
 ; load into wTempObjectCopy:
-; -1, -1, [de], [de + 1], [de + 2], [hMapObjectIndex], [NextMapX], [NextMapY], -1
+; -1, -1, [de], [de + 1], [de + 2], [hMapObjectIndex], [NextMapXHigh], [NextMapXLow], [NextMapYHigh], [NextMapYLow], -1
 ; This spawns the object at the same place as whichever object is loaded into bc.
 	ld hl, wTempObjectCopyMapObjectIndex
 	ld [hl], -1
@@ -2152,17 +2100,22 @@ CopyTempObjectData:
 	ldh a, [hMapObjectIndex]
 	ld [hli], a
 	push hl
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_HIGH
 	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
+	ld d, h
+	ld e, l
 	pop hl
-	ld [hl], d
-	inc hl
-	ld [hl], e
-	inc hl
+	ld a, [de] ; X high
+	ld [hli], a
+	inc de
+	ld a, [de] ; X low
+	ld [hli], a
+	inc de
+	ld a, [de] ; Y high
+	ld [hli], a
+	inc de
+	ld a, [de]
+	ld [hli], a
 	ld [hl], -1
 	ret
 
@@ -2204,7 +2157,7 @@ RespawnPlayerAndOpponent:
 	call _UpdateSprites
 	ret
 
-RespawnPlayer:
+RespawnPlayer::
 	call HideAllObjects
 	ld a, PLAYER
 	call RespawnObject
@@ -2249,17 +2202,21 @@ UpdateObjectFrozen:
 	call CheckObjectCoveredByTextbox
 	pop bc
 	jr c, SetFacing_Standing
-	call CheckObjectOnScreen
+	push bc
+	call IsObjectMovingOffEdgeOfScreen
+	pop bc
 	jr c, SetFacing_Standing
 	call UpdateObjectTile
-	farcall HandleFrozenObjectAction ; no need to farcall
+	call HandleFrozenObjectAction ; no need to farcall
 	xor a
 	ret
 
 UpdateRespawnedObjectFrozen:
-	call CheckObjectOnScreen
+	push bc
+	call IsObjectMovingOffEdgeOfScreen
+	pop bc
 	jr c, SetFacing_Standing
-	farcall HandleFrozenObjectAction ; no need to farcall
+	call HandleFrozenObjectAction
 	xor a
 	ret
 
@@ -2272,53 +2229,21 @@ SetFacing_Standing:
 
 UpdateObjectTile:
 	push bc
-	ld hl, OBJECT_MAP_X
+	ld hl, OBJECT_MAP_X_LOW
 	add hl, bc
 	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
+	inc hl ; move to the low byte of the y position
+	inc hl
 	ld e, [hl]
 	call GetCoordTile
 	pop bc
 	ld hl, OBJECT_TILE
 	add hl, bc
 	ld [hl], a
-	farcall UpdateTallGrassFlags ; no need to farcall
+	call UpdateTallGrassFlags
 	ret
 
-CheckObjectOnScreen:
-	ld hl, OBJECT_MAP_X
-	add hl, bc
-	ld d, [hl]
-	ld hl, OBJECT_MAP_Y
-	add hl, bc
-	ld e, [hl]
-	inc d
-	inc e
-	ld a, [wXCoord]
-	cp d
-	jr z, .equal_x
-	jr nc, .nope
-	add MAPOBJECT_SCREEN_WIDTH - 1
-	cp d
-	jr c, .nope
-.equal_x
-	ld a, [wYCoord]
-	cp e
-	jr z, .equal_y
-	jr nc, .nope
-	add MAPOBJECT_SCREEN_HEIGHT - 1
-	cp e
-	jr c, .nope
-.equal_y
-	xor a
-	ret
-
-.nope
-	scf
-	ret
-
-CheckObjectCoveredByTextbox:
+CheckObjectCoveredByTextbox: 
 ; Check whether the object fits in the screen width.
 	ld a, [wPlayerBGMapOffsetX]
 	ld d, a
@@ -2333,15 +2258,13 @@ CheckObjectCoveredByTextbox:
 	jr nc, .ok1
 	cp SCREEN_WIDTH_PX
 	jp nc, .nope
-.ok1
-; Account for objects currently moving left/right.
+.ok1 ; Account for objects currently moving left/right.
 	and %00000111
 	ld d, 2
 	cp TILE_WIDTH / 2
 	jr c, .ok2
 	ld d, 3
-.ok2
-; Convert pixels to tiles.
+.ok2 ; Convert pixels to tiles.
 	ld a, [hl]
 	srl a
 	srl a
@@ -2479,7 +2402,6 @@ RefreshPlayerSprite:
 	ld [wPlayerTurningDirection], a
 	ld [wPlayerStepFrame], a
 	call TryResetPlayerAction
-	farcall CheckWarpFacingDown
 	call c, SpawnInFacingDown
 	call SpawnInCustomFacing
 	ret

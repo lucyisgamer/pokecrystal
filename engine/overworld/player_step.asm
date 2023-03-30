@@ -18,6 +18,7 @@ _HandlePlayerStep::
 
 .update_player_coords
 	call UpdatePlayerCoords
+	farcall CheckChunkLoading
 	jr .finish
 
 .finish
@@ -61,7 +62,7 @@ HandlePlayerStep:
 .Jumptable:
 	dw GetMovementPermissions
 	dw BufferScreen
-	dw .mobile
+	dw .mobile ; stubbed bc mobile is cringe
 	dw .fail2
 ; The rest are never used.  Ever.
 	dw .fail1
@@ -76,7 +77,6 @@ HandlePlayerStep:
 	ret
 
 .mobile
-	farcall StubbedTrainerRankings_StepCount
 	ret
 
 .fail2
@@ -86,29 +86,57 @@ UpdatePlayerCoords:
 	ld a, [wPlayerStepDirection]
 	and a
 	jr nz, .check_step_down
-	ld hl, wYCoord
-	inc [hl]
+	ld a, [wYCoord]
+	ld h, a
+	ld a, [wYCoord + 1]
+	ld l, a
+	inc hl
+	ld a, h
+	ld [wYCoord], a
+	ld a, l
+	ld [wYCoord + 1], a
 	ret
 
 .check_step_down
 	cp UP
 	jr nz, .check_step_left
-	ld hl, wYCoord
-	dec [hl]
+	ld a, [wYCoord]
+	ld h, a
+	ld a, [wYCoord + 1]
+	ld l, a
+	dec hl
+	ld a, h
+	ld [wYCoord], a
+	ld a, l
+	ld [wYCoord + 1], a
 	ret
 
 .check_step_left
 	cp LEFT
 	jr nz, .check_step_right
-	ld hl, wXCoord
-	dec [hl]
+	ld a, [wXCoord]
+	ld h, a
+	ld a, [wXCoord + 1]
+	ld l, a
+	dec hl
+	ld a, h
+	ld [wXCoord], a
+	ld a, l
+	ld [wXCoord + 1], a
 	ret
 
 .check_step_right
 	cp RIGHT
 	ret nz
-	ld hl, wXCoord
-	inc [hl]
+	ld a, [wXCoord]
+	ld h, a
+	ld a, [wXCoord + 1]
+	ld l, a
+	inc hl
+	ld a, h
+	ld [wXCoord], a
+	ld a, l
+	ld [wXCoord + 1], a
 	ret
 
 UpdateOverworldMap:

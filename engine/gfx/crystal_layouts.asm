@@ -147,7 +147,7 @@ _CrystalCGB_MobileLayout1:
 	ld bc, 4 * SCREEN_WIDTH
 	ld a, $7
 	call ByteFill
-	ld a, [wd002]
+; 	ld a, [wd002]
 	bit 6, a
 	jr z, .asm_49464
 	call .Function49480

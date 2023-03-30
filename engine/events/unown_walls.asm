@@ -3,7 +3,7 @@ HoOhChamber:
 	ld a, [hl]
 	cp HO_OH ; is Ho-oh the first Pokémon in the party?
 	jr nz, .done ; if not, we're done
-	call GetMapAttributesPointer ; pointless?
+	; call GetMapAttributesPointer ; pointless? I certainly hop so
 	ld de, EVENT_WALL_OPENED_IN_HO_OH_CHAMBER
 	ld b, SET_FLAG
 	call EventFlagAction
@@ -11,7 +11,7 @@ HoOhChamber:
 	ret
 
 OmanyteChamber:
-	call GetMapAttributesPointer ; pointless?
+	; call GetMapAttributesPointer ; pointless?
 	ld de, EVENT_WALL_OPENED_IN_OMANYTE_CHAMBER
 	ld b, CHECK_FLAG
 	call EventFlagAction
@@ -43,7 +43,7 @@ OmanyteChamber:
 	jr nz, .loop
 
 .open
-	call GetMapAttributesPointer ; pointless?
+	; call GetMapAttributesPointer ; pointless?
 	ld de, EVENT_WALL_OPENED_IN_OMANYTE_CHAMBER
 	ld b, SET_FLAG
 	call EventFlagAction
@@ -55,12 +55,12 @@ SpecialAerodactylChamber:
 	push de
 	push bc
 
-	call GetMapAttributesPointer
-	ld a, h
-	cp HIGH(RuinsOfAlphAerodactylChamber_MapAttributes)
-	jr nz, .nope
+	; call GetMapAttributesPointer
+	; ld a, h
+	; cp HIGH(RuinsOfAlphAerodactylChamber_MapAttributes)
+	jr .nope ; Dummy this out - TODO - I will probably reuse this for aerodactyl. Make this work better!
 	ld a, l
-	cp LOW(RuinsOfAlphAerodactylChamber_MapAttributes)
+	; cp LOW(RuinsOfAlphAerodactylChamber_MapAttributes)
 	jr nz, .nope
 
 	ld de, EVENT_WALL_OPENED_IN_AERODACTYL_CHAMBER
@@ -82,12 +82,12 @@ SpecialKabutoChamber:
 	push hl
 	push de
 
-	call GetMapAttributesPointer
-	ld a, h
-	cp HIGH(RuinsOfAlphKabutoChamber_MapAttributes)
-	jr nz, .done
+	; call GetMapAttributesPointer
+	; ld a, h
+	; cp HIGH(RuinsOfAlphKabutoChamber_MapAttributes)
+	jr .done
 	ld a, l
-	cp LOW(RuinsOfAlphKabutoChamber_MapAttributes)
+	; cp LOW(RuinsOfAlphKabutoChamber_MapAttributes)
 	jr nz, .done
 
 	ld de, EVENT_WALL_OPENED_IN_KABUTO_CHAMBER

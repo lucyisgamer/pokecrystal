@@ -1501,7 +1501,6 @@ LinkTrade_TradeStatsMenu:
 	farcall CheckAnyOtherAliveMonsForTrade
 	jp nc, LinkTrade
 	xor a
-	ld [wUnusedLinkAction], a
 	ld [wOtherPlayerLinkAction], a
 	hlcoord 0, 12
 	ld b, 4
@@ -1515,7 +1514,6 @@ LinkTrade_TradeStatsMenu:
 
 .abnormal
 	xor a
-	ld [wUnusedLinkAction], a
 	ld [wOtherPlayerLinkAction], a
 	ld a, [wCurOTTradePartyMon]
 	ld hl, wOTPartySpecies
@@ -1619,8 +1617,6 @@ ExitLinkCommunications:
 	call GetSGBLayout
 	call WaitBGMap2
 	xor a
-	ld [wUnusedLinkCommunicationByte], a
-	xor a
 	ldh [rSB], a
 	ldh [hSerialSend], a
 	ld a, (0 << rSC_ON) | (1 << rSC_CLOCK)
@@ -1676,7 +1672,6 @@ LinkEngine_FillBox:
 
 LinkTrade:
 	xor a
-	ld [wUnusedLinkAction], a
 	ld [wOtherPlayerLinkAction], a
 	hlcoord 0, 12
 	ld b, 4
@@ -2017,8 +2012,6 @@ LinkTrade:
 
 .save
 	farcall SaveAfterLinkTrade
-	farcall StubbedTrainerRankings_Trades
-	farcall BackupMobileEventIndex
 	ld c, 40
 	call DelayFrames
 	hlcoord 0, 12
@@ -2646,19 +2639,4 @@ CableClubCheckWhichChris:
 
 .yes
 	ld [wScriptVar], a
-	ret
-
-GSLinkCommsBorderGFX: ; unreferenced
-INCBIN "gfx/trade/unused_gs_border_tiles.2bpp"
-
-CheckSRAM0Flag: ; unreferenced
-; input: hl = unknown flag array in "SRAM Bank 0"
-	ld a, BANK("SRAM Bank 0")
-	call OpenSRAM
-	ld d, 0
-	ld b, CHECK_FLAG
-	predef SmallFarFlagAction
-	call CloseSRAM
-	ld a, c
-	and a
 	ret

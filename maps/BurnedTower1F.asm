@@ -116,7 +116,6 @@ BurnedTowerRivalBattleScript:
 	closetext
 	setevent EVENT_HOLE_IN_BURNED_TOWER
 	pause 15
-	warpcheck
 	end
 
 BurnedTower1FEusineScript:

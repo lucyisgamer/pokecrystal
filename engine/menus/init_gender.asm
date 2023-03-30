@@ -8,8 +8,6 @@ InitCrystalData:
 	ld [wd476], a
 	ld [wd477], a
 	ld [wd478], a
-	ld [wd002], a
-	ld [wd003], a
 	ld a, [wd479]
 	res 0, a ; ???
 	ld [wd479], a
@@ -17,8 +15,6 @@ InitCrystalData:
 	res 1, a ; ???
 	ld [wd479], a
 	ret
-
-INCLUDE "mobile/mobile_12.asm"
 
 InitGender:
 	call InitGenderScreen
