@@ -26,7 +26,7 @@ DEF MBC3RTC        EQU $a000
 DEF SRAM_DISABLE EQU $00
 DEF SRAM_ENABLE  EQU $0a
 
-DEF NUM_SRAM_BANKS EQU 4
+DEF NUM_SRAM_BANKS EQU 8
 
 DEF RTC_S  EQU $08 ; Seconds   0-59 (0-3Bh)
 DEF RTC_M  EQU $09 ; Minutes   0-59 (0-3Bh)
@@ -47,7 +47,7 @@ DEF IE_DEFAULT EQU (1 << SERIAL) | (1 << TIMER) | (1 << LCD_STAT) | (1 << VBLANK
 
 ; OAM attribute flags
 DEF OAM_TILE_BANK EQU 3
-DEF OAM_OBP_NUM   EQU 4 ; non CGB Mode Only
+DEF OAM_OBP_NUM   EQU 4 ; non CGB Mode Only (aka useless)
 DEF OAM_X_FLIP    EQU 5
 DEF OAM_Y_FLIP    EQU 6
 DEF OAM_PRIORITY  EQU 7 ; 0: OBJ above BG, 1: OBJ behind BG (colors 1-3)

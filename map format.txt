@@ -1,5 +1,27 @@
-Map block header struct
-0x0: Charblock bank
+chunk header struct
+0x0: Charblock bank (top two bits specify the charblock bit depth)
 0x1-0x2: Charblock pointer within bank
-0x3: Tilemap bank
-0x4-0x5: Tilemap pointer
+0x3-0x4: Blockset pointer (points to the LAST block in the sequence)
+0x5: Blockset size
+
+Blockset
+0x0 - 0x8: Packed tile ids
+0x9 - 0xB: Collision bytes (top left, top right, bottom left, bottom right)
+0xC - 0xF: Packed top two bits of tile attributes (priority flag & vertical flip). they are stored as (3210 7654 BA98 FEDC) where each number is a bit pair for a tile
+parallel bank 1 & 2
+0x0 - 0xF: Half of packed tile ids (12 bit) and remaining bits of attributes
+
+Replacement Strategy:
+Tiles are dealt with via refrence counting from the loaded charblocks. If they ever reach 0 refrences, they are eligible to be replaced.
+Charblocks themselves will have dedicated bits for each chunk quadrant. If all the bits are cleared, the charblock is eligible for replacement.
+This algorithm will likely prioritize simplicity over pure efficiency. It will, however, need to be designed to run in stages over multiple frames.
+Tiles or charblocks that become unreferenced won't get zeroed, they will simply be overwritten when a new piece of data needs a home.
+
+000 0
+100 4
+010 2
+110 6
+001 1
+101 5
+011 3
+111 7

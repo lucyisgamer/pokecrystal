@@ -787,7 +787,8 @@ wTilemapCopyX:: db
 wTilemapCopyY:: db
 wXCoord:: dw
 wYCoord:: dw
-wChunkCoordsArray:: ds 8
+wChunkCoordsArray:: ds 8 ; 1053 bytes total for this union
+wChunkCopyLoopCounter:: db
 
 
 SECTION UNION "Overworld Map", WRAM0
@@ -3049,7 +3050,6 @@ wGameDataEnd::
 
 SECTION "even more WRAM 1 shit", WRAMX ; put misc data and temp buffers here
 wTempCoordinateBuffer:: ds 4
-wUsedCharblocks:: ds 8 ; each bit corresponds to a charblock slot.
 
 SECTION "Pic Animations", WRAMX
 
@@ -3089,10 +3089,27 @@ wPokeAnimBitmaskCurBit:: db
 wPokeAnimBitmaskBuffer:: ds 7
 	ds 2
 wPokeAnimStructEnd::
+wOutdatedTileFlags:: ds 384 / 8
+
+; 63 bytes free
+SECTION "Chunk Load LUT", WRAMX
+wChunkLoadLUT:: ds $100 ; 
+wCharblockLUT:: ds $200
+wCharblockLUTEnd::
+wUsedCharblockFlags:: ds $80
+wTileRefrenceCounts:: ds $180 ; refrence counters for each tile
+wTileIdLUT:: ds $300
+wTileIdLUTEnd::
+wDecompressedCharblockBuffer:: ds $40
+wUsedTileIds:: ds $20
+wUsedTileIdsEnd:: db ; this gets set to $FF to make sure that we always find the end of the list no matter what
+wTileRefrenceLoopCounter:: db
+
+; a lot of bytes free
 
 SECTION "Surrounding Attributes", WRAMX ; pinned to $D4A0
 wSurroundingAttr:: ds SCREEN_HEIGHT * SCREEN_WIDTH
-
+; a lot of bytes free
 
 SECTION "GBC Video", WRAMX, ALIGN[8]
 
@@ -3200,10 +3217,7 @@ NEXTU
 wSurfWaveBGEffect:: ds $40
 wSurfWaveBGEffectEnd::
 ENDU
-
-SECTION "Collision Data", WRAMX
-wCollisionData:: ds $400
-
+; at least $800 bytes free, possibly more
 
 SECTION "Scratch RAM", WRAMX
 
@@ -3214,14 +3228,11 @@ wScratchAttrmap:: ds BG_MAP_WIDTH * BG_MAP_HEIGHT
 NEXTU
 wDecompressScratch:: ds $80 tiles
 wDecompressEnemyFrontpic:: ds $80 tiles
-
-NEXTU
-; unidentified uses
-w6_d000:: ds $1000
 ENDU
-
+; 2k free
 
 SECTION "Stack RAM", WRAMX
 
 wWindowStack:: ds $1000 - 1
 wWindowStackBottom:: ds 1
+; none free :(

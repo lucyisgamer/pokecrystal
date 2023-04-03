@@ -1,15 +1,16 @@
 CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to be loaded and loads them
+	ld hl, wXCoord
+	ld a, [hli]
+	ld b, a
+	ld a, [hli]
+	ld c, a
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	
 	ld h, $00 ;      7      6      5       4       3       2       1       0
 			  ;      x      x      up     down    left   right   original flags  
-	ld a, [wXCoord] ; TODO - this will need to load the top byte of the player position. The rest of the routine can handle it, I just need to enable it
-	ld b, a
-	ld a, [wXCoord + 1]
-	ld c, a
-	ld a, [wYCoord]
-	ld d, a
-	ld a, [wYCoord + 1]
-	ld e, a
-	
+
 	call GetChunkCoords ; get the coordinates of our current chunk and shove them into the correct places
 	ld a, [wYCoord + 1]
 	and a, $3F
@@ -42,21 +43,19 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 	cp a, $18
 	jr nc, .BottomSide
 	ld a, h
-	cp a, $00
+	and a
     ret z; If none of these evaluated through we must be in the middle of the chunk, so return early
 	jr .Edge ; If only left or right got activated then we must be on an edge
 
 .TopSide:
 	ld a, h
 	and a, $FC
-	cp a, $00
     set $05, h
 	jr z, .TopEdge
 	jr .Corner
 .BottomSide:
 	ld a, h
 	and a, $FC
-	cp a, $00
 	set $04, h
 	jr z, .BottomEdge
 	jr .Corner
@@ -177,8 +176,13 @@ LoadChunk:
 
 	pop hl
 	ret
+
 .outdated:
 	farcall CopyChunkHeader
+	farcall MarkUnrefrencedBlocks
+	farcall UpdateBlockset
+	farcall UpdateTileset
 	farcall LoadChunkToMapBuffer
 	pop hl
 	ret
+	

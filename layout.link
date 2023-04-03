@@ -277,6 +277,8 @@ WRAMX 1
 	"even more WRAM 1 shit"
 WRAMX 2
 	"Pic Animations"
+	align $100
+	"Chunk Load LUT"
 WRAMX 3
 	org $d4a0 ; this must be the same offset within the bank as the tilemap or things will go very wrong
 	"Surrounding Attributes"
@@ -285,8 +287,6 @@ WRAMX 5
 	"GBC Video"
 	org $d300
 	"Battle Animations"
-	org $d800
-	"Collision Data"
 WRAMX 6
 	"Scratch RAM"
 WRAMX 7

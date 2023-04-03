@@ -10,8 +10,7 @@
             "request": "launch",
             "name": "Launch in Emulicious",
             "preLaunchTask": "buildRom",
-            "emuliciousPath": "C:/Users/Lucy/Documents/Emulicious/Emulicious.jar",
-            "program": "C:/Users/Lucy/Desktop/orange/pokecrystal11.gbc",
+            "program": "/Users/lucy/Documents/repos/pokecrystal/pokecrystal11.gbc",
             "port": 58870,
             "stopOnEntry": false
         }

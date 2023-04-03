@@ -26,6 +26,10 @@ endc
 ; latch clock data
 	ld a, 1
 	ld [MBC3LatchClock], a
+	nop
+	nop
+	nop
+	nop ; extra delay to ensure we don't fucky the timer registers due to double speed mode
 ; enable sram/clock write
 	ld a, SRAM_ENABLE
 	ld [MBC3SRamEnable], a
@@ -39,6 +43,10 @@ CloseSRAM::
 	ld a, SRAM_DISABLE
 ; reset clock latch for next time
 	ld [MBC3LatchClock], a
+	nop
+	nop
+	nop
+	nop
 ; disable sram/clock write
 	ld [MBC3SRamEnable], a
 	pop af

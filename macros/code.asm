@@ -23,7 +23,7 @@ MACRO jumptable
 	jp hl
 ENDM
 
-MACRO maskbits ; masks off bits in a. this is so fucking dumb, why can't you just put an and
+MACRO maskbits ; masks off bits in a. this is so fucking dumb, why can't you just do and a, $bullshit
 ; masks just enough bits to cover values 0 to \1 - 1
 ; \2 is an optional shift amount
 ; e.g. "maskbits 26" becomes "and %00011111" (since 26 - 1 = %00011001)
