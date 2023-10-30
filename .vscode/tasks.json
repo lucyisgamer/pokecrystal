@@ -6,7 +6,7 @@
         {
             "label": "buildRom",
             "type": "shell",
-            "command": "cd ~/Documents/repos/pokecrystal ; gmake crystal11 DEBUG=1",
+            "command": "cd /mnt/c/Users/Lucy/Documents/repos/orange ; gmake crystal11 DEBUG=1",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

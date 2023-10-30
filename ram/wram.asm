@@ -789,6 +789,7 @@ wXCoord:: dw
 wYCoord:: dw
 wChunkCoordsArray:: ds 8 ; 1053 bytes total for this union
 wChunkCopyLoopCounter:: db
+wNewChunkFlags:: db
 
 
 SECTION UNION "Overworld Map", WRAM0
@@ -3236,3 +3237,4 @@ SECTION "Stack RAM", WRAMX
 wWindowStack:: ds $1000 - 1
 wWindowStackBottom:: ds 1
 ; none free :(
+	

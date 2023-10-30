@@ -50,6 +50,8 @@ MarkUnrefrencedBlocks::
     jr nz, .bottomRight ; fallthrough
 
 .zeroed
+    ld b, b
+    pop af
     pop af
     ldh [rSVBK], a
     ret

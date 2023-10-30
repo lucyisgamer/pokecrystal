@@ -9,8 +9,7 @@
             "type": "emulicious-debugger",
             "request": "launch",
             "name": "Launch in Emulicious",
-            "preLaunchTask": "buildRom",
-            "program": "/Users/lucy/Documents/repos/pokecrystal/pokecrystal11.gbc",
+            "program": "/Users/Lucy/Desktop/orange/pokecrystal11.gbc",
             "port": 58870,
             "stopOnEntry": false
         }

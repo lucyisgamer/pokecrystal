@@ -1,6 +1,9 @@
 CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to be loaded and loads them
+	ld a, [wNewChunkFlags]
+	and a ; check if chunk loads are already scheduled
+	ret nz ; if they are, let's bail
 	ld hl, wXCoord
-	ld a, [hli]
+	ld a, [hli] ; shove the player's coordinates into the regs
 	ld b, a
 	ld a, [hli]
 	ld c, a
@@ -13,7 +16,7 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 
 	call GetChunkCoords ; get the coordinates of our current chunk and shove them into the correct places
 	ld a, [wYCoord + 1]
-	and a, $3F
+	and a, $3F ; split player coords into location within the map buffer and location within the current chunk
 	ld c, a
 	and a, $1F
 	ld e, a
@@ -23,7 +26,7 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 	and a, $1F
 	ld d, a
 
-	bit $05, b
+	bit $05, b ; figure out what quadrant of the map buffer we are in
 	jr z, .skip1
 	set $00, h
 .skip1:
@@ -160,29 +163,40 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 
 LoadChunk:
 	push hl ; de is already unused by this point
-	ld hl, wChunkCoordsArray
+	ld hl, wChunkCoordsArray ; use the chunk quadrant to index into the chunkCoordsArray
 	ld a, [wChunkQuadrant]
 	sla a
 	ld d, $00
 	ld e, a
 	add hl, de
+	srl e
 	ld a, [wChunkX]
 	cp a, [hl]
-	jr nz, .outdated
-	inc hl
+	ld [hli], a
+	call nz, .outdated
 	ld a, [wChunkY]
 	cp a, [hl]
-	jr nz, .outdated
-
-	pop hl
-	ret
-
-.outdated:
-	farcall CopyChunkHeader
-	farcall MarkUnrefrencedBlocks
-	farcall UpdateBlockset
-	farcall UpdateTileset
-	farcall LoadChunkToMapBuffer
+	ld [hl], a
+	call nz, .outdated
 	pop hl
 	ret
 	
+
+.outdated
+	ld a, e
+	inc a
+	ld d, $01
+.loop
+	rrc d ; set the flag corresponding to whatever chunk is requesting to be loaded
+	dec a ; chunk loads are handled async by checking the flags
+	jr nz, .loop
+	ld a, [wNewChunkFlags]
+	or a, d
+	ld [wNewChunkFlags], a
+	ret
+	
+	;farcall CopyChunkHeader
+	;farcall MarkUnrefrencedBlocks
+	;farcall UpdateBlockset
+	;farcall UpdateTileset
+	;farcall LoadChunkToMapBuffer

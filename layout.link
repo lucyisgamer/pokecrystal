@@ -148,6 +148,8 @@ ROMX $3e
 	"bank3E"
 ROMX $3f
 	"bank3F"
+ROMX $40
+	"Async"
 ROMX $41
 	"bank41"
 ROMX $42
@@ -277,7 +279,7 @@ WRAMX 1
 	"even more WRAM 1 shit"
 WRAMX 2
 	"Pic Animations"
-	align $100
+	org $d200
 	"Chunk Load LUT"
 WRAMX 3
 	org $d4a0 ; this must be the same offset within the bank as the tilemap or things will go very wrong

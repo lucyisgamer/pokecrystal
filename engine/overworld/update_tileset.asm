@@ -32,9 +32,11 @@ UpdateBlockset:: ; this function is SLOW
 
 .continue
     inc hl
-    cp h, HIGH(wCharblockLUTEnd)
+    ld a, h
+    cp a, HIGH(wCharblockLUTEnd)
     jr nz, .innerLoop
-    cp l, LOW(wCharblockLUTEnd)
+    ld a, l
+    cp a, LOW(wCharblockLUTEnd)
     jr nz, .innerLoop ; fall through to inserting the charblock into an unused slot
 
 .endInnerUnused ; we need to insert the chunk data into an empty slot and update all the gajillion refrences
@@ -46,7 +48,8 @@ UpdateBlockset:: ; this function is SLOW
     call AddCharblockRefrence
     dec de
     dec c
-    cp c, $FF
+    ld a, c
+    inc a
     jr nz, .outerLoop
 
 .endOuter
@@ -69,7 +72,7 @@ AddCharblockRefrence::
     swap [hl]
 .swapStart
 
-    ld a, [wcChunkQuadrant]
+    ld a, [wChunkQuadrant]
     and a
     jr z, .topLeft
     dec a
@@ -125,10 +128,12 @@ CheckUnused::
     pop bc                  
     and a, $F0
     jr nz, .inUse
-    cp b, $FF
+    inc b ; if b is FF this will set z
     jr nz, .inUse ; if b isn't FF, we've already found an unused charblock
+    dec b
     ld b, c
 .inUse
+    dec b
     pop hl
     ret
 
@@ -189,9 +194,9 @@ UnrefrenceTiles:: ; this assumes we are already in the correct WRAM bank. if we'
     pop hl
     inc hl
     inc hl
-    ld a, [wTileRefrenceLoopCoutner]
+    ld a, [wTileRefrenceLoopCounter]
     dec a
-    ld [wTileRefrenceLoopCoutner], a
+    ld [wTileRefrenceLoopCounter], a
     jr nz, .loop
 
 .updateRefrences
@@ -201,7 +206,8 @@ UnrefrenceTiles:: ; this assumes we are already in the correct WRAM bank. if we'
     ld d, [hl]
     inc hl
     ld e, [hl]
-    cp d, $FF ; if we find a tile with the top id byte equal to $FF, then we know we have reached the end of the list
+    ld a, d
+    cp a, $FF ; if we find a tile with the top id byte equal to $FF, then we know we have reached the end of the list
     jr z, .end
     ld hl, wTileRefrenceCounts
     add hl, de
@@ -264,7 +270,7 @@ UnpackCharblockData:: ; copies and unpacks charblock id de into wDecompressedCha
     call FarCopyBytes ; next 16 bytes from parallel ROM bank 2
 
     ld hl, wDecompressedCharblockBuffer + $3F ; hl now points to the end of the decompressed charblock buffer
-    ld bc, wDecompressedCharblockbuffer + $0F ; bc points to the end of the rest of the tile attributes
+    ld bc, wDecompressedCharblockBuffer + $0F ; bc points to the end of the rest of the tile attributes
     dec de
 
 .attrLoop
@@ -286,14 +292,15 @@ UnpackCharblockData:: ; copies and unpacks charblock id de into wDecompressedCha
     ld a, [bc]
     rla
     rla
-    ld [bc] a
+    ld [bc], a
     ld a, [de]
     and a, $0F
     ld [de], a
     dec bc
     dec de
     dec de
-    cp l, LOW(wDecompressedCharblockBuffer + $1F)
+    ld a, l
+    cp a, LOW(wDecompressedCharblockBuffer + $1F)
     jr nz, .attrLoop ; when this loop is done we have finished unpacking the tile ids and attribute data
 
     ld hl, wDecompressedCharblockBuffer + $0F ; point to the end of the unpacked tilemap data
@@ -308,7 +315,8 @@ UnpackCharblockData:: ; copies and unpacks charblock id de into wDecompressedCha
     and a, $0F
     ld [hld], a
     dec de
-    cp e, LOW(wDecompressedCharblockBuffer - 1)
+    ld a, e
+    cp a, LOW(wDecompressedCharblockBuffer - 1)
     jr nz, .tileLoop ; when this loop is done we have finished unpacking the tilemap data
 
     pop bc
@@ -364,7 +372,7 @@ CopyCharblockData::
 
     push bc
     ld a, [bc]
-    add a, #30 ; make sure we load from the attribute data
+    add a, $30 ; make sure we load from the attribute data
     add a, c
     ld c, a
     ld a, b
@@ -374,20 +382,21 @@ CopyCharblockData::
     ld b, [hl]
     rr b
     jr nc, .firstBank
-    set OAM_TIl_BANK, a ; make sure to set the bank bit if the tile we need is in the second VRAM bank
+    set OAM_TILE_BANK, a ; make sure to set the bank bit if the tile we need is in the second VRAM bank
 .firstBank
     ld [de], a
     inc de
     pop bc
     inc bc
-    cp c, LOW(wDecompressedCharblockBuffer + $10)
+    ld a, c
+    cp a, LOW(wDecompressedCharblockBuffer + $10)
     jr nz, .loop
 
     pop bc
     pop de
     pop hl
     call CloseSRAM
-    d hl, wUsedTileIds
+    ld hl, wUsedTileIds
     ld [MBC3SRamBank], a
     ret
     
@@ -412,7 +421,8 @@ GetUsedTileIds:: ; this copies all the tile ids used by this charblock into wUse
     ld a, [hl]
     ld [bc], a
     inc de
-    cp e, LOW(wDecompressedCharblockBuffer + $10)
+    ld a, e
+    cp a, LOW(wDecompressedCharblockBuffer + $10)
     jr nz, .loop
     ret 
 
@@ -442,7 +452,7 @@ FindTileSlots::
     cp a, e
     jr nz, .noMatch
     ; we've found a match, so put the slot index into bc and get the blazes out of here
-    ld bc, (-wTileIdLUT - $80)
+    ld bc, (-wTileIdLUT - $80) % $FFFF
     add hl, bc
     ld b, h
     ld c, l
@@ -450,9 +460,11 @@ FindTileSlots::
 
 .noMatch
     inc hl ; point to the next tile slot
-    cp h, HIGH(wTileIdLUTEnd)
+    ld a, h
+    cp a, HIGH(wTileIdLUTEnd)
     jr nz, .loop
-    cp l, LOW(wTileIdLUTEnd)
+    ld a, l
+    cp a, LOW(wTileIdLUTEnd)
     jr nz, .loop
 .endInner
     pop de

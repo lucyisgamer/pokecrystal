@@ -9,7 +9,9 @@ OverworldLoop::
 	rst JumpTable
 	ld a, [wMapStatus]
 	cp MAPSTATUS_DONE
-	jr nz, .loop
+	jr z, .done ; if we don't jump out of the loop then we can begin processing async events
+	farcall processAsyncEvents
+	jr .loop
 .done
 	ret
 
@@ -198,15 +200,10 @@ LoadMapPartsOnSpawn::
 	call LoadChunkToMapBuffer
 	ret
 
-UnusedWait30Frames: ; unreferenced
-	ld c, 30
-	call DelayFrames
-	ret
-
 HandleMap:
 	call ResetOverworldDelay
 	call HandleMapTimeAndJoypad
-	farcall HandleCmdQueue ; no need to farcall
+	call HandleCmdQueue
 	call MapEvents
 
 ; Not immediately entering a connected map will cause problems.
