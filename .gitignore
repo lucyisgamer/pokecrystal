@@ -62,3 +62,6 @@ build.sh
 # vs code platform-specific files
 .vscode/launch.json
 .vscode/tasks.json
+
+# rgbds itself, for some reason
+/rgbds
