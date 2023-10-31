@@ -481,6 +481,7 @@ INCLUDE "engine/events/mom_phone.asm"
 SECTION "Async", ROMX
 
 INCLUDE "engine/overworld/asyncEvents.asm"
+INCLUDE "engine/overworld/loadChunk.asm"
 
 SECTION "bank41", ROMX
 

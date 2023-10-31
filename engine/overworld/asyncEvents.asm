@@ -1,54 +1,47 @@
 processAsyncEvents:: ; runs after the overworld loop is done. put things that don't need to run every frame here
     ld hl, .timings - 2
 .loop
-    ld a, [rLY]
+    ld a, [rLY] ; check what scanline we're on
     ld b, a
     ld a, 141 ; number of active lines of display - 2
-    sub a, b
+    sub a, b ; a now has the number of lines remaining for async work
+    ret c ; if we're out of time return
 .search
-    inc hl
+    inc hl ; march down the routine list
     inc hl
     cp a, [hl]
-    jr c, .search
-    push hl
-    inc hl
+    jr c, .search ; if a routine needs more scanlines than are available keep looking
+    push hl ; we've found a routine, set up the jumptable
+    inc hl ; hl now points to the jumptable index
     ld a, [hl]
     ld hl, .jumptable
     rst JumpTable
     pop hl
     jr nc, .loop ; if an async function sets it's carry flag it can run multiple times
-    dec hl
+    dec hl ; back it up and try this function again
     dec hl
     jr .loop
 
-.jumptable
+.jumptable ; functions either need stubs here or need to be in the same bank as this jumptable
     dw .End
     dw LoadNewChunk
-    dw BigLongFunction
+    dw TileDMA
 
-.timings: ; timings here means how many scanlines it takes for the routine to run in the worst case
-    db $FF, BIG_LONG_FUNCTION
+; note: each scanline is 228 cycles
+.timings: ; timings here means how many scanlines it takes for the routine to run once in the worst case
     db $01, LOAD_CHUNK ; these are listed in priority order
-    db $00, END
+    db $01, DMA_TILE
+    db $00, END ; this is here to provide a simple escape hatch
 
 DEF END EQU $00 ; jumps to a return to break out of processing
 DEF LOAD_CHUNK EQU $01
-DEF BIG_LONG_FUNCTION EQU $02
+DEF DMA_TILE EQU $02
 
 .End
-    inc sp ; evil stack mangling to break out of processing events
-    inc sp ; note that the gameboy's stack grows DOWNWARD
-    inc sp ; forgetting that will cause fun times
-    inc sp
-    ret
+    add sp, 4 ; evil stack mangling to break out of processing events
+    ret ; note that the gameboy's stack grows DOWNWARD
 
-LoadNewChunk::
-    ld a, $02
-    cp a, d
-    ld d, $02
-    scf
-    ret nz
-    ccf
+TileDMA::
     ret
 
 BigLongFunction::

@@ -24,7 +24,7 @@ hSeconds:: db
 
 hVBlankCounter:: db
 
-	ds 1
+hROMBankHigh:: db
 
 hROMBank:: db
 hVBlank:: db

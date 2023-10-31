@@ -15,10 +15,17 @@ Bankswitch::
 	ret
 
 SECTION "rst18", ROM0[$0018]
-	rst $38
+BigBankswitch:: ; switch to bank h:a (a = 0 is treated as a = 1 by the hardware)
+	; bit 4 of h changes which half of sram is used
+	ldh [hROMBank], a
+	set 5, h
+	ld [hl], a
+	ld a, h
+	ldh [hROMBankHigh], a
+	; fallthrough
 
 SECTION "rst20", ROM0[$0020]
-	rst $38
+	ret
 
 SECTION "rst28", ROM0[$0028]
 JumpTable::
@@ -35,7 +42,8 @@ JumpTable::
 	jp hl
 
 SECTION "rst38", ROM0[$0038]
-	rst $38
+	ld b, b
+	ret
 
 
 ; Game Boy hardware interrupts

@@ -378,5 +378,4 @@ MainMenu_Continue:
 	ret
 
 MainMenu_MysteryGift:
-	farcall MysteryGift
 	ret

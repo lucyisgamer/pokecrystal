@@ -52,9 +52,6 @@ Init::
 	ldh [rTAC], a
 	ld [wBetaTitleSequenceOpeningType], a
 
-	ld a, %100 ; Start timer at 4096Hz
-	ldh [rTAC], a
-
 .wait
 	ldh a, [rLY]
 	cp LY_VBLANK + 1
