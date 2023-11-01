@@ -488,7 +488,6 @@ SECTION "bank41", ROMX
 INCLUDE "engine/gfx/dma_transfer.asm"
 INCLUDE "gfx/emotes.asm"
 INCLUDE "engine/overworld/warp_connection.asm"
-INCLUDE "engine/link/mystery_gift.asm"
 INCLUDE "engine/battle/used_move_text.asm"
 INCLUDE "engine/gfx/load_overworld_font.asm"
 

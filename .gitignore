@@ -64,4 +64,6 @@ build.sh
 .vscode/tasks.json
 
 # rgbds itself, for some reason
-/rgbds
+*/rgbds
+rgbds/*
+./rgbds/*

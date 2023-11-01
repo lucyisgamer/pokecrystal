@@ -4,6 +4,11 @@ chunk header struct
 0x3-0x4: Blockset pointer (points to the LAST block in the sequence)
 0x5: Blockset size
 
+0x0-0x1: charblock bank
+0x2-0x3: charblock pointer within bank (top two bits specify bit depth)
+0x4-0x5: blockset pointer (top two bits may specify bank)
+0x6: Blockset size
+
 Blockset
 0x0 - 0x8: Packed tile ids
 0x9 - 0xB: Collision bytes (top left, top right, bottom left, bottom right)
