@@ -1,5 +1,5 @@
 chunk header struct
-0x0: Charblock bank (top two bits specify the charblock bit depth)
+0x0: Charblock bank (top two bits specify the charblock bit depth [%11 = 8. %10 = 4, %01 = 2, %00 = 1])
 0x1-0x2: Charblock pointer within bank
 0x3-0x4: Blockset pointer (points to the LAST block in the sequence)
 0x5: Blockset size

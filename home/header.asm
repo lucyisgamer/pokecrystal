@@ -9,9 +9,13 @@ FarCall::
 	jp FarCall_hl
 
 SECTION "rst10", ROM0[$0010]
-Bankswitch::
-	ldh [hROMBank], a
-	ld [MBC3RomBank], a
+Bankswitch:: ; this is stupid slow but it works
+	push hl
+	push af
+	ld h, $20
+	rst BigBankswitch
+	pop af
+	pop hl
 	ret
 
 SECTION "rst18", ROM0[$0018]

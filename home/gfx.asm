@@ -148,6 +148,37 @@ FarCopyBytes::
 	rst Bankswitch
 	ret
 
+ReallyFarCopyBytes:: ; copy a bytes from bc:hl to de
+	push af
+	ld a, c
+	ldh [hTempBank], a
+	ldh a, [hROMBank]
+	ld c, a
+	ld a, b
+	ldh [hTempBankHigh], a ; put our requested bank into the hTempBank values
+	ldh a, [hROMBankHigh]
+	ld b, a
+	pop af
+	push bc ; our top stack entry now has our old bank that we need to get back to at some point
+
+	push af
+	push hl
+	ldh a, [hTempBankHigh]
+	ld h, a
+	ldh a, [hTempBank]
+	rst BigBankswitch ; actually switch banks
+	pop hl
+	pop af
+
+	ld c, a
+	ld b, $00
+	call CopyBytes ; do the copy
+
+	pop hl
+	ld a, l
+	rst BigBankswitch
+	ret
+
 FarCopyBytesDouble:
 ; Copy bc bytes from a:hl to bc*2 bytes at de,
 ; doubling each byte in the process.

@@ -174,5 +174,6 @@ if DEF(_DEBUG)
 hDebugRoomMenuPage::
 endc
 hClockResetTrigger:: db
+hTempBankHigh:: db
 
-	ds 19
+	ds 18

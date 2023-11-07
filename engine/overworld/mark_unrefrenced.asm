@@ -4,7 +4,7 @@ MarkUnrefrencedBlocks::
     ld a, BANK(wCharblockLUT)
     ldh [rSVBK], a ; switch WRAM bank
 .unrefrenceBlocks ; clear the corresponding bit for the current chunk quadrant 
-    ld bc, $0000
+    ld b, $00
     ld a, [wChunkQuadrant]
     ld hl, .jumptable
     rst JumpTable
