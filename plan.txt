@@ -1,6 +1,0 @@
-Modify map loading routine to handle very large maps by paging areas in and out
-Extend coordinates for all npcs to 16 bits
-Implement area detection & have it call most map-enter related functions (i.e. show location to player)
-Implement tileset switching based on newly added area detection
-Implement loading/unloading npcs based on distance
-
