@@ -151,12 +151,12 @@ $(foreach obj, $(pokecrystal11_vc_obj), $(eval $(call DEP,$(obj),$(obj:11_vc.o=.
 endif
 
 
-pokecrystal_opt         = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
-pokecrystal11_opt       = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
-pokecrystal_au_opt      = -Cjv -t PM_CRYSTAL -i BYTU -n 0 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
-pokecrystal_debug_opt   = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
-pokecrystal11_debug_opt = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
-pokecrystal11_vc_opt    = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x10 -r 5 -p 0
+pokecrystal_opt         = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
+pokecrystal11_opt       = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
+pokecrystal_au_opt      = -Cjv -t PM_CRYSTAL -i BYTU -n 0 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
+pokecrystal_debug_opt   = -Cjv -t PM_CRYSTAL -i BYTE -n 0 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
+pokecrystal11_debug_opt = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
+pokecrystal11_vc_opt    = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x14 -r 5 -p 0
 
 %.gbc: $$(%_obj) layout.link
 	$(RGBLINK) -n $*.sym -m $*.map -l layout.link -o $@ $(filter %.o,$^)
@@ -187,22 +187,22 @@ gfx/pokemon/%/frames.asm: gfx/pokemon/%/front.animated.tilemap gfx/pokemon/%/fro
 
 ### Terrible hacks to match animations. Delete these rules if you don't care about matching.
 
-# Dewgong has an unused tile id in its last frame. The tile itself is missing.
-gfx/pokemon/dewgong/frames.asm: gfx/pokemon/dewgong/front.animated.tilemap gfx/pokemon/dewgong/front.dimensions
-	tools/pokemon_animation -f $^ > $@
-	echo "	db \$$4d" >> $@
+# # Dewgong has an unused tile id in its last frame. The tile itself is missing.
+# gfx/pokemon/dewgong/frames.asm: gfx/pokemon/dewgong/front.animated.tilemap gfx/pokemon/dewgong/front.dimensions
+# 	tools/pokemon_animation -f $^ > $@
+# 	echo "	db \$$4d" >> $@
 
-# Lugia has two unused tile ids in its last frame. The tiles themselves are missing.
-gfx/pokemon/lugia/frames.asm: gfx/pokemon/lugia/front.animated.tilemap gfx/pokemon/lugia/front.dimensions
-	tools/pokemon_animation -f $^ > $@
-	echo "	db \$$5e, \$$59" >> $@
+# # Lugia has two unused tile ids in its last frame. The tiles themselves are missing.
+# gfx/pokemon/lugia/frames.asm: gfx/pokemon/lugia/front.animated.tilemap gfx/pokemon/lugia/front.dimensions
+# 	tools/pokemon_animation -f $^ > $@
+# 	echo "	db \$$5e, \$$59" >> $@
 
-# Girafarig has a redundant tile after the end. It is used in two frames, so it must be injected into the generated graphics.
-# This is more involved, so it's hacked into pokemon_animation_graphics.
-gfx/pokemon/girafarig/front.animated.2bpp: gfx/pokemon/girafarig/front.2bpp gfx/pokemon/girafarig/front.dimensions
-	tools/pokemon_animation_graphics --girafarig -o $@ $^
-gfx/pokemon/girafarig/front.animated.tilemap: gfx/pokemon/girafarig/front.2bpp gfx/pokemon/girafarig/front.dimensions
-	tools/pokemon_animation_graphics --girafarig -t $@ $^
+# # Girafarig has a redundant tile after the end. It is used in two frames, so it must be injected into the generated graphics.
+# # This is more involved, so it's hacked into pokemon_animation_graphics.
+# gfx/pokemon/girafarig/front.animated.2bpp: gfx/pokemon/girafarig/front.2bpp gfx/pokemon/girafarig/front.dimensions
+# 	tools/pokemon_animation_graphics --girafarig -o $@ $^
+# gfx/pokemon/girafarig/front.animated.tilemap: gfx/pokemon/girafarig/front.2bpp gfx/pokemon/girafarig/front.dimensions
+# 	tools/pokemon_animation_graphics --girafarig -t $@ $^
 
 
 ### Misc file-specific graphics rules
