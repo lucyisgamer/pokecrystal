@@ -4,12 +4,12 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        
         {
             "type": "emulicious-debugger",
             "request": "launch",
+            "preLaunchTask": "buildRom",
             "name": "Launch in Emulicious",
-            "program": "/Users/Lucy/Desktop/orange/pokecrystal11.gbc",
+            "program": "${workspaceFolder}/pokecrystal11.gbc",
             "port": 58870,
             "stopOnEntry": false
         }

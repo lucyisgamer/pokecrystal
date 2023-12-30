@@ -7,8 +7,8 @@ chunk header struct
 Blockset
 0x0 - 0x8: Packed tile ids
 0x9 - 0xB: Collision bytes (top left, top right, bottom left, bottom right)
-0xC - 0xF: Packed top two bits of tile attributes (priority flag & vertical flip). they are stored as (3210 7654 BA98 FEDC) where each number is a bit pair for a tile
-0x10 - 0x2F: Packed tile ids (12 bit) and remaining bits of attributes
+0x10 - 0x2F:tile ids (16 bit)
+0x30 - 0x3F:tile attributes
 
 Replacement Strategy:
 Tiles are dealt with via refrence counting from the loaded charblocks. If they ever reach 0 refrences, they are eligible to be replaced.

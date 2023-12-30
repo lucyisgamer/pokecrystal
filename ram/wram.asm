@@ -771,7 +771,6 @@ wPuzzlePieces:: ds 6 * 6
 ENDU
 
 SECTION UNION "Overworld Map", WRAM0 ; this is forced to be at address $C800 so i can do some nasty bit hacking to get certain data that I need
-
 ; overworld map blocks
 wOverworldMapBlocks:: ds 1024
 wOverworldMapBlocksEnd::

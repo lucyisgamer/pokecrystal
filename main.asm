@@ -626,10 +626,10 @@ SECTION "Stadium 2 Checksums", ROMX[$7DE0], BANK[$7F]
 	ds $220
 
 SECTION "Chunk Headers 0", ROMX
-INCLUDE "chunks/headers0.asm"
+INCBIN "map/headers/headers0.bin"
 
 SECTION "Chunk Headers 1", ROMX
-INCLUDE "chunks/headers1.asm"
+INCBIN "map/headers/headers1.bin"
 
 SECTION "Chunks 0", ROMX
-INCLUDE "chunks/chunks0.asm"
+INCBIN "map/chunks/chunks0.bin"

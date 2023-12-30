@@ -48,13 +48,32 @@ LoadNewChunk::
     dw Unpack8bpc
 
 Unpack1bpc:
-    ret
 
 Unpack2bpc:
-    ret
 
 Unpack4bpc:
-    ret
 
 Unpack8bpc:
+    ld de, wOverworldMapBlocks
+    ld a, [wChunkQuadrant]
+    bit 1, a
+    jr z, .top
+    set 1, d
+.top
+    bit 0, a
+    jr z, .left
+    set 0, d ; make sure we copy to the correct address within the chunks
+.left
+
+    ld hl, wChunkHeader
+    ld b, [hl]
+    inc hl
+    ld c, [hl]
+    inc hl
+    ld a, [hli]
+    ld l, [hl]
+    ld h, a
+    cpl
+    or a, h ; set a to $FF
+    call ReallyFarCopyBytes
     ret
