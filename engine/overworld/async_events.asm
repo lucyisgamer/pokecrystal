@@ -26,7 +26,7 @@ processAsyncEvents:: ; runs after the overworld loop is done. put things that do
     dw .End
     dw LoadNewChunk
     dw TileDMA
-    dw CopyBlocksetIDs_stub
+    dw CopyBlocksetIDs
 
 ; note: each scanline is 228 cycles
 .timings: ; timings here means how many scanlines it takes for the routine to run once in the worst case
@@ -49,8 +49,4 @@ TileDMA::
 
 BigLongFunction::
     ld b, b
-    ret
-
-CopyBlocksetIDs_stub:
-    farcall CopyBlocksetIDs
     ret

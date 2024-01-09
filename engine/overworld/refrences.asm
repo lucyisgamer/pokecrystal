@@ -1,27 +1,28 @@
 DEF BLOCK_START_BANK EQU $101
 
-CopyBlocksetIDs:: ; note: only farcall
+CopyBlocksetIDs::
+
     ld a, [wNewChunkFlags]
     and a, $0F
     ret z ; bail if we don't need to do anything
-    ld de, $10FF
-.search
-    rrc d ; d is used to figure out which chunk needs it's flag cleared
-    inc e ; e is which chunk quadrant we need to fuck with
-    sra a
-    jr nc, .search ; find the first chunk that is requesting a load
-    push de
+;     ld de, $10FF
+; .search
+;     rrc d ; d is used to figure out which chunk needs it's flag cleared
+;     inc e ; e is which chunk quadrant we need to fuck with
+;     sra a
+;     jr nc, .search ; find the first chunk that is requesting a load
+;     push de
 
-    ld a, e ; now we need to get the header of the chunk we're messing with
-    sla a
-    ld hl, wChunkCoordsArray
-    add a, l
-    ld l, a ; hl now points to the coordinates of our chunk we're fucking with
-    ld a, [hli]
-    ld [wChunkX], a
-    ld a, [hl]
-    ld [wChunkY], a
-    call CopyChunkHeader
+;     ld a, e ; now we need to get the header of the chunk we're messing with
+;     sla a
+;     ld hl, wChunkCoordsArray
+;     add a, l
+;     ld l, a ; hl now points to the coordinates of our chunk we're fucking with
+;     ld a, [hli]
+;     ld [wChunkX], a
+;     ld a, [hl]
+;     ld [wChunkY], a
+;     call CopyChunkHeader
 
     ld a, BANK(sCharblockLUT)
     call OpenSRAM
@@ -62,3 +63,7 @@ CopyBlocksetIDs:: ; note: only farcall
     or a, d
     ld [hl], d ; set the flag to signal the next function to start
     ret
+; oh hey look it's the next function
+ResolveCharblockLUT::
+    ld a, [wNewChunkFlags + 1]
+    
