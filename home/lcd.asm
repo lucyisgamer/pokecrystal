@@ -15,7 +15,7 @@ LCD::
 	and a
 	jr z, .done
 
-; At this point it's assumed we're in BANK(wLYOverrides)!
+	; At this point it's assumed we're in (WRAM) BANK(wLYOverrides)!
 	push bc
 	ldh a, [rLY]
 	ld c, a

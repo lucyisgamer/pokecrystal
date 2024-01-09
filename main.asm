@@ -270,8 +270,6 @@ INCLUDE "engine/events/engine_flags.asm"
 INCLUDE "engine/overworld/variables.asm"
 INCLUDE "data/text/battle.asm"
 INCLUDE "engine/debug/color_picker.asm"
-INCLUDE "engine/overworld/mark_unrefrenced.asm"
-INCLUDE "engine/overworld/update_tileset.asm"
 
 SECTION "bank21", ROMX
 
@@ -480,8 +478,10 @@ INCLUDE "engine/events/mom_phone.asm"
 
 SECTION "Async", ROMX
 
-INCLUDE "engine/overworld/asyncEvents.asm"
-INCLUDE "engine/overworld/loadChunk.asm"
+INCLUDE "engine/overworld/async_events.asm"
+INCLUDE "engine/overworld/load_chunk.asm"
+INCLUDE "engine/overworld/mark_unrefrenced.asm"
+INCLUDE "engine/overworld/refrences.asm"
 
 SECTION "bank41", ROMX
 

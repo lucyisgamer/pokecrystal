@@ -161,8 +161,8 @@ pokecrystal11_vc_opt    = -Cjv -t PM_CRYSTAL -i BYTE -n 1 -k 01 -l 0x33 -m 0x13 
 %.gbc: $$(%_obj) layout.link
 	$(RGBLINK) -n $*.sym -m $*.map -l layout.link -o $@ $(filter %.o,$^)
 	$(RGBFIX) $($*_opt) $@
-	$(RGBFIX) -m 0x14 $@
-
+	$(RGBFIX) -m 0x14 $@ 
+# for some reason RGBFIX crashes if the mapper is set to 0x14 with the previous invocation
 
 ### LZ compression rules
 

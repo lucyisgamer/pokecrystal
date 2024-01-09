@@ -1,5 +1,5 @@
-OpenSRAM::
-; if invalid bank, sram is disabled
+OpenSRAM:: ; Enable and switch to SRAM bank a. if invalid bank, sram is disabled
+	; TODO - update to switch to far sram banks
 	cp NUM_SRAM_BANKS
 	jr c, .valid
 if DEF(_DEBUG)

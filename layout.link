@@ -252,7 +252,7 @@ ROMX $80
 	"Chunk Headers 0"
 ROMX $81
 	"Chunk Headers 1"
-ROMX $C0
+ROMX $E01
 	"Chunks 0"
 
 WRAM0
@@ -279,8 +279,6 @@ WRAMX 1
 	"even more WRAM 1 shit"
 WRAMX 2
 	"Pic Animations"
-	org $d200
-	"Chunk Load LUT"
 WRAMX 3
 	org $d4a0 ; this must be the same offset within the bank as the tilemap or things will go very wrong
 	"Surrounding Attributes"
@@ -318,9 +316,25 @@ SRAM $04
 SRAM $05
 	
 SRAM $06
-	
+	"Chunk Load LUT"
 SRAM $07
 	"Charblock Data"
+SRAM $08
+
+SRAM $09
+
+SRAM $0A
+
+SRAM $0B
+
+SRAM $0C
+
+SRAM $0D
+
+SRAM $0E
+
+SRAM $0F
+
 HRAM
 	"OAM DMA"
 	"HRAM"

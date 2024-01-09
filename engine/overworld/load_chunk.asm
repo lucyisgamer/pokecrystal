@@ -1,6 +1,13 @@
 LoadNewChunk::
     ld a, [wNewChunkFlags]
-    and a
+    and a, $0F
+    ld b, a
+    ld a, [wNewChunkFlags + 1]
+    or a, b
+    ret nz ; if any chunks are currently in the process of being loaded we bail
+
+    ld a, [wNewChunkFlags]
+    and a, $F0
     ret z ; if no new chunk loads are scheduled we can return early
     ld hl, wChunkCoordsArray
     ld bc, $11FF
@@ -32,7 +39,7 @@ LoadNewChunk::
     ld a, [hl]
     ld [wChunkY], a
     farcall CopyChunkHeader ; i.. want... CHUNK HEADER!
-    farcall MarkUnrefrencedBlocks ; remove any refrences for the old chunk we are replacing
+    call MarkUnrefrencedBlocks ; remove any refrences for the old chunk we are replacing
 
     ld a, [wChunkHeader + 2]
     and a, %11000000 ; get the bit depth of this chunk
@@ -40,6 +47,7 @@ LoadNewChunk::
     rlca
     ld hl, .jumptable
     rst JumpTable
+    ret
 
 .jumptable
     dw Unpack1bpc
@@ -64,16 +72,21 @@ Unpack8bpc:
     jr z, .left
     set 0, d ; make sure we copy to the correct address within the chunks
 .left
-
     ld hl, wChunkHeader
     ld b, [hl]
+    ld a, $E
+    add a, b
+    ld b, a
     inc hl
     ld c, [hl]
     inc hl
     ld a, [hli]
+    and a, %00111111
+    add a, $40
     ld l, [hl]
     ld h, a
     cpl
     or a, h ; set a to $FF
     call ReallyFarCopyBytes
-    ret
+
+

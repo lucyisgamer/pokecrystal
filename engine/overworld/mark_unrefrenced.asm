@@ -1,56 +1,26 @@
 MarkUnrefrencedBlocks::
-    ldh a, [rSVBK]
-    push af
-    ld a, BANK(wCharblockLUT)
-    ldh [rSVBK], a ; switch WRAM bank
-.unrefrenceBlocks ; clear the corresponding bit for the current chunk quadrant 
-    ld b, $00
+    ld a, BANK(sUsedCharblockFlags)
+    call OpenSRAM
+
     ld a, [wChunkQuadrant]
-    ld hl, .jumptable
-    rst JumpTable
-.jumptable
-    dw .topLeft
-    dw .topRight
-    dw .bottomLeft
-    dw .bottomRight
-
-.topLeft
-    ld hl, wCharblockLUT
-    res $07, [hl]
-    inc hl
-    inc hl
+    ld b, a
+    inc b
+    ld a, %10001000
+.setFlag
+    rlca
     dec b
-    jr nz, .topLeft
-    jr .zeroed
+    jr nz, .setFlag
+    cpl
+    ld c, a
 
-.topRight
-    ld hl, wCharblockLUT
-    res $06, [hl]
-    inc hl
-    inc hl
+    ld hl, sUsedCharblockFlags
+    ld b, $80
+.loop
+    ld a, [hl]
+    and a, c
+    ld [hli], a
     dec b
-    jr nz, .topRight
-    jr .zeroed
+    jr nz, .loop
 
-.bottomLeft
-    ld hl, wCharblockLUT
-    res $05, [hl]
-    inc hl
-    inc hl
-    dec b
-    jr nz, .bottomLeft
-    jr .zeroed
-
-.bottomRight
-    ld hl, wCharblockLUT
-    res $04, [hl]
-    inc hl
-    inc hl
-    dec b
-    jr nz, .bottomRight ; fallthrough
-
-.zeroed
-    pop af
-    pop af
-    ldh [rSVBK], a
+    call CloseSRAM
     ret

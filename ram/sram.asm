@@ -168,5 +168,18 @@ SECTION "Boxes 8-14", SRAM
 	assert box_n == NUM_BOXES, \
 		"boxes: Expected {d:NUM_BOXES} total boxes, got {d:box_n}"
 
+SECTION "Chunk Load LUT", SRAM
+	sCharblockLUT:: ds $200
+	sCharblockLUTEnd::
+	sUsedCharblockFlags:: ds $80
+	sTileRefrenceCounts:: ds $180 ; refrence counters for each tile
+	sTileIdLUT:: ds $300
+	sTileIdLUTEnd::
+	sDecompressedCharblockBuffer:: ds $40
+	sUsedTileIds:: ds $20
+	sUsedTileIdsEnd:: db ; this gets set to $FF to make sure that we always find the end of the list no matter what
+	sTileRefrenceLoopCounter:: db
+	; 7070 bytes free
+
 SECTION "Charblock Data", SRAM
 	sCharblockData:: ds $2000 ; this stores interleaved tile ids and attribute data

@@ -788,7 +788,7 @@ wXCoord:: dw
 wYCoord:: dw
 wChunkCoordsArray:: ds 8 ; 1053 bytes total for this union
 wChunkCopyLoopCounter:: db
-wNewChunkFlags:: db
+wNewChunkFlags:: dw
 
 
 SECTION UNION "Overworld Map", WRAM0
@@ -3091,21 +3091,8 @@ wPokeAnimBitmaskBuffer:: ds 7
 wPokeAnimStructEnd::
 wOutdatedTileFlags:: ds 384 / 8
 
-; 63 bytes free
-SECTION "Chunk Load LUT", WRAMX
-wChunkLoadLUT:: ds $100 ; 
-wCharblockLUT:: ds $200
-wCharblockLUTEnd::
-wUsedCharblockFlags:: ds $80
-wTileRefrenceCounts:: ds $180 ; refrence counters for each tile
-wTileIdLUT:: ds $300
-wTileIdLUTEnd::
-wDecompressedCharblockBuffer:: ds $40
-wUsedTileIds:: ds $20
-wUsedTileIdsEnd:: db ; this gets set to $FF to make sure that we always find the end of the list no matter what
-wTileRefrenceLoopCounter:: db
 
-; a lot of bytes free
+; a fuck ton of bytes free
 
 SECTION "Surrounding Attributes", WRAMX ; pinned to $D4A0
 wSurroundingAttr:: ds SCREEN_HEIGHT * SCREEN_WIDTH
