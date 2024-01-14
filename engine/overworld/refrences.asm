@@ -180,6 +180,40 @@ ResolveCharblockLUT::
     call CloseSRAM
     ret
 
+ApplyCharblockLUT::
+    ld a, [wNewChunkFlags + 1]
+    and a, $0F
+    ret z
+
+    ld b, $04
+.search
+    dec b
+    rra
+    jr nc, .search
+    ld a, b ; a now has the chunk quadrant we're working on
+
+    ld de, wOverworldMapBlocks
+    add a, d ; de now points to the start of the chunk we're working on
+    ld d, a ; this only works if wOverworldMapBlocks is aligned to $100
+
+    ld a, BANK(sCharblockLUT)
+    call OpenSRAM ; open wide sram
+
+    ld h, HIGH(sCharblockLUT) ; sCharblockLUT is also aligned to $100
+.loop
+    ld a, [de]
+    ld l, a
+    ld a, [hl]
+    ld [de], a
+    inc e
+    jr nz, .loop
+
+    call CloseSRAM
+    xor a
+    ld [wNewChunkFlags + 1], a
+    ret
+    
+
 
     
     

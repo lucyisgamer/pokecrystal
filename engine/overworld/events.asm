@@ -225,6 +225,7 @@ ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coo
 .resolveLoop
 	farcall ResolveCharblockLUT
 	jr c, .resolveLoop
+	farcall ApplyCharblockLUT
 	ret
 
 

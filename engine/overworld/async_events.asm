@@ -27,11 +27,14 @@ processAsyncEvents:: ; runs after the overworld loop is done. put things that do
     dw LoadNewChunk
     dw TileDMA
     dw CopyBlocksetIDs
+    dw ResolveCharblockLUT
 
 ; note: each scanline is 228 cycles
 .timings: ; timings here means how many scanlines it takes for the routine to run once in the worst case
     db $01, LOAD_CHUNK ; these are listed in priority order
     db $04, COPY_BLOCKSET_IDS
+    db $14, RESOLVE_CHARBLOCK_LUT
+    db $09, APPLY_CHARBLOCK_LUT
     db $01, DMA_TILE
     db $00, END ; this is here to provide a simple escape hatch
 
@@ -39,6 +42,8 @@ DEF END EQU $00 ; jumps to a return to break out of processing
 DEF LOAD_CHUNK EQU $01
 DEF DMA_TILE EQU $02
 DEF COPY_BLOCKSET_IDS EQU $03
+DEF RESOLVE_CHARBLOCK_LUT EQU $04
+DEF APPLY_CHARBLOCK_LUT EQU $05
 
 .End
     add sp, 4 ; evil stack mangling to break out of processing events
