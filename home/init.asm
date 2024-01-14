@@ -93,6 +93,7 @@ Init::
 	call ClearVRAM
 	call ClearSprites
 	call ClearsScratch
+	call ClearSRAM
 
 	ld a, BANK(WriteOAMDMACodeToHRAM) ; aka BANK(GameInit)
 	rst Bankswitch
@@ -210,3 +211,28 @@ ClearsScratch::
 	call ByteFill
 	call CloseSRAM
 	ret
+
+ClearSRAM:: ; clear SRAM banks used by the chunkloading process
+	ld a, BANK(sCharblockLUT)
+	call OpenSRAM
+	ld hl, sCharblockLUT
+	ld bc, $200
+	xor a
+	call ByteFill
+	ld bc, $200 ; sCharblockIDs gets filled with $FF
+	dec a
+	call ByteFill
+	ld bc, $1600
+	xor a
+	call ByteFill
+
+	ld a, BANK(sCharblockData)
+	call OpenSRAM
+	ld hl, sCharblockLUT
+	ld bc, $2000
+	xor a
+	call ByteFill
+
+	call CloseSRAM
+	ret
+

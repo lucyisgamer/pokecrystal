@@ -252,6 +252,10 @@ ROMX $80
 	"Chunk Headers 0"
 ROMX $81
 	"Chunk Headers 1"
+ROMX $101
+	"Indices 0"
+ROMX $105
+	"Blocks 0"
 ROMX $E01
 	"Chunks 0"
 

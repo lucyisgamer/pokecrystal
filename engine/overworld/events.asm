@@ -174,31 +174,59 @@ LoadMapPartsOnSpawn::
 	ld hl, wChunkY
 	dec [hl]
 .TopSide
-	call CopyChunkHeader ; Top Left
-	ld a, $00
-	ld [wChunkQuadrant], a
-	call LoadChunkToMapBuffer
-	ld hl, wChunkX
-	inc [hl]
-	call CopyChunkHeader ; Top Right
-	ld a, $01
-	ld [wChunkQuadrant], a
-	call LoadChunkToMapBuffer
-	ld hl, wChunkX
-	dec [hl]
-	inc hl ; increment chunk y
-	inc [hl]
-	call CopyChunkHeader ; Bottom Left
-	ld a, $02
-	ld [wChunkQuadrant], a
-	call LoadChunkToMapBuffer
-	ld hl, wChunkX
-	inc [hl]
-	call CopyChunkHeader; bottom right
-	ld a, $03
-	ld [wChunkQuadrant], a
-	call LoadChunkToMapBuffer
+	ld hl, wChunkCoordsArray
+	ld a, [wChunkX]
+	ld b, a
+	ld a, [wChunkY]
+	ld c, a
+	ld [hl], b
+	inc hl
+	ld [hl], c
+	inc hl
+	inc b
+	ld [hl], b
+	inc hl
+	ld [hl], c
+	inc hl
+	inc c
+	dec b
+	ld [hl], b
+	inc hl
+	ld [hl], c
+	inc hl
+	inc b
+	ld [hl], b
+	inc hl
+	ld [hl], c
+
+	ld b, $00
+	call ForceLoadChunk
+	ld b, $01
+	call ForceLoadChunk
+	ld b, $02
+	call ForceLoadChunk
+	ld b, $03
+	call ForceLoadChunk
+
 	ret
+
+ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coorectly set in the array
+	; this WILL lag the game, but it's only intended to be used if loading chunks normally won't work
+	inc b
+	ld a, $01
+.search
+	rrca
+	dec b
+	jr nz, .search
+	ld [wNewChunkFlags], a
+	farcall LoadNewChunk
+	nop
+	farcall CopyBlocksetIDs
+.resolveLoop
+	farcall ResolveCharblockLUT
+	jr c, .resolveLoop
+	ret
+
 
 HandleMap:
 	call ResetOverworldDelay

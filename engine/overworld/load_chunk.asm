@@ -4,6 +4,9 @@ LoadNewChunk::
     ld b, a
     ld a, [wNewChunkFlags + 1]
     or a, b
+    ld b, a
+    ld a, [wNewChunkFlags + 2]
+    or a, b
     ret nz ; if any chunks are currently in the process of being loaded we bail
 
     ld a, [wNewChunkFlags]
@@ -64,14 +67,8 @@ Unpack4bpc:
 Unpack8bpc:
     ld de, wOverworldMapBlocks
     ld a, [wChunkQuadrant]
-    bit 1, a
-    jr z, .top
-    set 1, d
-.top
-    bit 0, a
-    jr z, .left
-    set 0, d ; make sure we copy to the correct address within the chunks
-.left
+    or a, d
+    ld d, a
     ld hl, wChunkHeader
     ld b, [hl]
     ld a, $E
@@ -86,7 +83,8 @@ Unpack8bpc:
     ld l, [hl]
     ld h, a
     cpl
-    or a, h ; set a to $FF
+    or a, h ; set a to $FF and clear carry in the process
     call ReallyFarCopyBytes
+    ret
 
 

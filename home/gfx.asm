@@ -148,7 +148,7 @@ FarCopyBytes::
 	rst Bankswitch
 	ret
 
-ReallyFarCopyBytes:: ; copy a bytes from bc:hl to de
+ReallyFarCopyBytes:: ; copy a bytes from bc:hl to de. carry flag is used as 9th length bit
 	push af
 	ld a, c
 	ldh [hTempBank], a
@@ -172,6 +172,7 @@ ReallyFarCopyBytes:: ; copy a bytes from bc:hl to de
 
 	ld c, a
 	ld b, $00
+	rl b
 	call CopyBytes ; do the copy
 
 	pop hl

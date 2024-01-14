@@ -786,9 +786,8 @@ wTilemapCopyX:: db
 wTilemapCopyY:: db
 wXCoord:: dw
 wYCoord:: dw
-wChunkCoordsArray:: ds 8 ; 1053 bytes total for this union
-wChunkCopyLoopCounter:: db
-wNewChunkFlags:: dw
+wChunkCoordsArray:: ds 8 ; 1056 bytes total for this union
+wNewChunkFlags:: ds 3
 
 
 SECTION UNION "Overworld Map", WRAM0
