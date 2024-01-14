@@ -56,8 +56,6 @@ used_space.png
 # macos files
 .DS_STORE
 
-
-
 # rgbds itself, for some reason
 */rgbds
 rgbds/*

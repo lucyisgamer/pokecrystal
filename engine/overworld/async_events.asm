@@ -28,6 +28,7 @@ processAsyncEvents:: ; runs after the overworld loop is done. put things that do
     dw TileDMA
     dw CopyBlocksetIDs
     dw ResolveCharblockLUT
+    dw ApplyCharblockLUT
 
 ; note: each scanline is 228 cycles
 .timings: ; timings here means how many scanlines it takes for the routine to run once in the worst case
