@@ -582,20 +582,18 @@ endr
 
 	ld a, [wSpriteFlags]
 	bit 5, a
-	jr nz, .done
+	ret nz
 	bit 6, a
-	jr nz, .done
+	ret nz
 
 	ldh a, [hUsedSpriteIndex]
 	call _DoesSpriteHaveFacings
-	jr c, .done
+	ret c
 
 	ld a, h
 	add HIGH(vTiles1 - vTiles0)
 	ld h, a
 	call .CopyToVram
-
-.done
 	ret
 
 .GetTileAddr:
@@ -619,9 +617,9 @@ endr
 	push af
 	ld a, [wSpriteFlags]
 	bit 5, a
-	ld a, $1
-	jr z, .bankswitch
 	ld a, $0
+	jr z, .bankswitch
+	ld a, $1
 
 .bankswitch
 	ldh [rVBK], a

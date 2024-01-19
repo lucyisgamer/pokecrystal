@@ -92,7 +92,7 @@ StartMap:
 	call ByteFill
 	farcall InitCallReceiveDelay */
 	call ClearJoypad
-EnterMap:
+EnterMap: 
 	xor a
 	ld [wXYComparePointer], a
 	ld [wXYComparePointer + 1], a
@@ -109,11 +109,15 @@ EnterMap:
 	call GetMapTimeOfDay ; Pulled from HandleContinueMap
 	call DisableLCD
 	ld [wMapTimeOfDay], a
-	ld a, TILESET_PLAYERS_ROOM
+	xor a
 	ld [wMapTileset], a
-	call BufferScreen
-	farcall LoadMapGraphics
+	call BufferScreen 
+	;farcall LoadMapGraphics
 	farcall LoadMapTimeOfDay
+
+	call LoadFontsExtra
+	farcall LoadOverworldFont
+	farcall RefreshSprites
 
 	call EnableLCD
 	farcall LoadMapPalettes
@@ -122,12 +126,7 @@ EnterMap:
 	farcall RefreshMapSprites
 	farcall PlayMapMusicBike
 	farcall FadeInPalettes
-
-	
-	
-
 	call DisableEvents
-
 	ldh a, [hMapEntryMethod]
 	cp MAPSETUP_CONNECTION
 	jr nz, .dont_enable
