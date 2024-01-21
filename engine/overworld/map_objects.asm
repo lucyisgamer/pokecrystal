@@ -2821,7 +2821,7 @@ InitSprites:
 	ldh [hCurSpriteTile], a
 	xor a
 	bit 7, [hl]
-	jr nz, .not_vram1
+	jr z, .not_vram1 ; this is how we swap the vram banks sprite tiles are pulled from
 	or VRAM_BANK_1
 .not_vram1
 	ld hl, OBJECT_FLAGS2
