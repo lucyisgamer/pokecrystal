@@ -39,8 +39,6 @@ DEF OBJECT_1D               rb ; 23
 DEF OBJECT_1E               rb ; 24
 DEF OBJECT_JUMP_HEIGHT      rb ; 25
 DEF OBJECT_RANGE            rb ; 26
-DEF OBJECT_Z                rb ; 27 ; whoa we're going into the fuckin third dimension!
-DEF OBJECT_INIT_Z           rb ; 28
 DEF OBJECT_LENGTH EQU _RS
 DEF NUM_OBJECT_STRUCTS EQU 13 ; see wObjectStructs
 

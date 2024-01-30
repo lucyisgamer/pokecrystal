@@ -6,7 +6,7 @@
         {
             "label": "buildRom",
             "type": "shell",
-            "command": "make -B crystal11 DEBUG=1",
+            "command": "make crystal11 DEBUG=1",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

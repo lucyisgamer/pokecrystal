@@ -2128,9 +2128,7 @@ UpdateAllObjectsFrozen::
 .loop
 	ldh [hMapObjectIndex], a
 	call DoesObjectHaveASprite
-	jr z, .ok
-	call UpdateObjectFrozen
-.ok
+	call nz, UpdateObjectFrozen
 	ld hl, OBJECT_LENGTH
 	add hl, bc
 	ld b, h
@@ -2207,7 +2205,7 @@ UpdateObjectFrozen:
 	pop bc
 	jr c, SetFacing_Standing
 	call UpdateObjectTile
-	call HandleFrozenObjectAction ; no need to farcall
+	call HandleFrozenObjectAction
 	xor a
 	ret
 
@@ -2659,7 +2657,7 @@ _UpdateSprites::
 	push af
 	ld a, 1
 	ldh [hOAMUpdate], a
-	call InitSprites
+	call InitSprites ; hUsedSpriteIndex isn't properly being handled when pausing. this function is the last one to touch it
 	call .fill
 	pop af
 	ldh [hOAMUpdate], a

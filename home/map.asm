@@ -111,7 +111,7 @@ GetScreenCoordinates:: ; Gets the coordinates of the top left 16*16 tile of the 
 	ld a, [wPlayerStepDirection] ; Player coordinates aren't updated until after tiles are loaded
 	
 	and a
-	jr z, .Down ; this isn't correctly adjusting the screen position for movement
+	jr z, .Down
 	cp a, $01
 	jr z, .Up
 	cp a, $02
