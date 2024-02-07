@@ -52,7 +52,3 @@ DEF APPLY_CHARBLOCK_LUT EQU $05
 
 TileDMA::
     ret
-
-BigLongFunction::
-    ld b, b
-    ret

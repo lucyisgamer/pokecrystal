@@ -3090,8 +3090,15 @@ wPokeAnimBitmaskBuffer:: ds 7
 wPokeAnimStructEnd::
 wOutdatedTileFlags:: ds 384 / 8
 
-
-; a fuck ton of bytes free
+wDecompressedCharblockBuffer::
+wDecompressedCharblockTileIndices:: ds 8
+wDecompressedCharblockCollision:: ds 4
+	ds 3
+wDecompressedCharblockTileLength:: db
+wDecompressedCharblockTileIDs:: ds 32
+wDecompressedCharblockAttributes:: ds 16
+wCharblockBufferID:: dw
+wCharblockBufferSlotID:: db
 
 SECTION "Surrounding Attributes", WRAMX ; pinned to $D4A0
 wSurroundingAttr:: ds SCREEN_HEIGHT * SCREEN_WIDTH

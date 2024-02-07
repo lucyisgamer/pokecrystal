@@ -235,6 +235,8 @@ ApplyCleanseTagEffectOnEncounterRate::
 	ld hl, wPartyMon1Item
 	ld de, PARTYMON_STRUCT_LENGTH
 	ld a, [wPartyCount]
+	and a
+	ret z ; prevent weirdness if the player is somehow in tall grass with no pokemon
 	ld c, a
 .loop
 	ld a, [hl]

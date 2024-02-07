@@ -946,7 +946,7 @@ StartTitleScreen:
 
 	ld hl, rLCDC
 	res rLCDC_SPRITE_SIZE, [hl] ; 8x8
-	call ClearScreen
+	call ClearScreenTitle
 	call WaitBGMap2
 	xor a
 	ldh [hLCDCPointer], a

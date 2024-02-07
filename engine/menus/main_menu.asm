@@ -359,8 +359,8 @@ MainMenu_PrintCurrentTimeAndDay:
 ClearTilemapEtc:
 	xor a
 	ldh [hMapAnims], a
-	call ClearTilemap
 	call LoadFontsExtra
+	call ClearTilemap
 	call LoadStandardFont
 	call ClearWindowData
 	ret

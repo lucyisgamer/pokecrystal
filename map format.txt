@@ -7,11 +7,12 @@ chunk header struct
 Blockset
 0x0 - 0x8: Packed tile ids
 0x9 - 0xB: Collision bytes (top left, top right, bottom left, bottom right)
-0x10 - 0x2F:tile ids (16 bit)
-0x30 - 0x3F:tile attributes
+0xF: number of tiles this block uses (1-based)
+0x10 - 0x2F: tile ids (16-bit)
+0x30 - 0x3F: tile attributes
 
 Replacement Strategy:
-Tiles are dealt with via refrence counting from the loaded charblocks. If they ever reach 0 refrences, they are eligible to be replaced.
+Tiles are dealt with via reference counting from the loaded charblocks. If they ever reach 0 references, they are eligible to be replaced.
 Charblocks themselves will have dedicated bits for each chunk quadrant. If all the bits are cleared, the charblock is eligible for replacement.
 This algorithm will likely prioritize simplicity over pure efficiency. It will, however, need to be designed to run in stages over multiple frames.
 Tiles or charblocks that become unreferenced won't get zeroed, they will simply be overwritten when a new piece of data needs a home.

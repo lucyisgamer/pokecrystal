@@ -36,42 +36,6 @@
 	charmap "<ROCKET>",  $5e ; "ROCKET"
 	charmap "<DEXEND>",  $5f
 
-; Actual characters (from gfx/font/font_extra.png)
-
-	charmap "<BOLD_A>",  $60 ; unused
-	charmap "<BOLD_B>",  $61 ; unused
-	charmap "<BOLD_C>",  $62 ; unused
-	charmap "<BOLD_D>",  $63 ; unused
-	charmap "<BOLD_E>",  $64 ; unused
-	charmap "<BOLD_F>",  $65 ; unused
-	charmap "<BOLD_G>",  $66 ; unused
-	charmap "<BOLD_H>",  $67 ; unused
-	charmap "<BOLD_I>",  $68 ; unused
-	charmap "<BOLD_V>",  $69
-	charmap "<BOLD_S>",  $6a
-	charmap "<BOLD_L>",  $6b ; unused
-	charmap "<BOLD_M>",  $6c ; unused
-	charmap "<COLON>",   $6d ; colon with tinier dots than ":"
-	charmap "ぃ",         $6e ; hiragana small i, unused
-	charmap "ぅ",         $6f ; hiragana small u, unused
-	charmap "<PO>",      $70
-	charmap "<KE>",      $71
-	charmap "“",         $72 ; opening quote
-	charmap "”",         $73 ; closing quote
-	charmap "·",         $74 ; middle dot, unused
-	charmap "…",         $75 ; ellipsis
-	charmap "ぁ",         $76 ; hiragana small a, unused
-	charmap "ぇ",         $77 ; hiragana small e, unused
-	charmap "ぉ",         $78 ; hiragana small o, unused
-
-	charmap "┌",         $79
-	charmap "─",         $7a
-	charmap "┐",         $7b
-	charmap "│",         $7c
-	charmap "└",         $7d
-	charmap "┘",         $7e
-	charmap " ",         $7f
-
 ; Actual characters (from gfx/font/font_battle_extra.png)
 
 	charmap "<LV>",      $6e
@@ -159,12 +123,14 @@
 	charmap "y",         $b8
 	charmap "z",         $b9
 
-	charmap "Ä",         $c0
-	charmap "Ö",         $c1
-	charmap "Ü",         $c2
-	charmap "ä",         $c3
-	charmap "ö",         $c4
-	charmap "ü",         $c5
+	charmap "┌",         $ba
+	charmap "─",         $bb
+	charmap "┐",         $bc
+	charmap "│",         $bd
+	charmap "└",         $be
+	charmap "┘",         $bf
+	charmap "′",         $ce
+	charmap "″",         $cf
 
 	charmap "'d",        $d0
 	charmap "'l",        $d1
@@ -174,15 +140,27 @@
 	charmap "'t",        $d5
 	charmap "'v",        $d6
 
+	charmap "■",         $d7
+	charmap "▲",         $d8
+	charmap "☎",        $d9
+	charmap "<BOLD_V>",  $da
+	charmap "<BOLD_S>",  $db
+	charmap "<COLON>",   $dc ; colon with tinier dots than ":"
+	charmap "“",         $dd ; opening quote
+	charmap "”",         $de ; closing quote
+
 	charmap "←",         $df
 	charmap "'",         $e0
 	charmap "<PK>",      $e1
 	charmap "<MN>",      $e2
 	charmap "-",         $e3
+	charmap "<PO>",      $e4
+	charmap "<KE>",      $e5
 
 	charmap "?",         $e6
 	charmap "!",         $e7
 	charmap ".",         $e8
+	charmap "<DOT>",     $e8 ; decimal point; same as "."
 	charmap "&",         $e9
 
 	charmap "é",         $ea
@@ -193,7 +171,7 @@
 	charmap "♂",         $ef
 	charmap "¥",         $f0
 	charmap "×",         $f1
-	charmap "<DOT>",     $f2 ; decimal point; same as "." in English
+	charmap "…",         $f2 ; ellipsis
 	charmap "/",         $f3
 	charmap ",",         $f4
 	charmap "♀",         $f5
@@ -285,7 +263,8 @@
 	charmap "・", $74
 	charmap "⋯", $75
 
-	charmap "　", $7f
+	charmap " ",  $c0
+	charmap "　", $c0
 
 	charmap "ア", $80
 	charmap "イ", $81

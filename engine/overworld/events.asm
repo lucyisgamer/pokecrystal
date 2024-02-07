@@ -112,7 +112,7 @@ EnterMap:
 	xor a
 	ld [wMapTileset], a
 	call BufferScreen 
-	;farcall LoadMapGraphics
+	farcall LoadMapGraphics
 	farcall LoadMapTimeOfDay
 
 	call LoadFontsExtra

@@ -1,7 +1,9 @@
 _TitleScreen:
 	call ClearBGPalettes
 	call ClearSprites
-	call ClearTilemap
+	hlcoord 0, 0
+	ld a, $7F
+	call ClearTilemapTitle
 
 ; Turn BG Map update off
 	xor a
@@ -101,7 +103,7 @@ _TitleScreen:
 ; Clear screen tiles
 	hlbgcoord 0, 0
 	ld bc, 64 * BG_MAP_WIDTH
-	ld a, " "
+	ld a, $7F ; " " but the old way
 	call ByteFill
 
 ; Draw Pokemon logo

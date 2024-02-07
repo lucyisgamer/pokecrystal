@@ -174,14 +174,11 @@ SECTION "Chunk Load LUT", SRAM
 	sCharblockLUTEnd::
 	sUsedCharblockFlags:: ds $80
 	sTileRefrenceCounts:: ds $180 ; refrence counters for each tile
-	sTileIdLUT:: ds $300
-	sTileIdLUTEnd::
-	sDecompressedCharblockBuffer:: ds $40
-	sUsedTileIds:: ds $20
-	sUsedTileIdsEnd:: db ; this gets set to $FF to make sure that we always find the end of the list no matter what
+	sTileIDLUT:: ds $300
+	sTileIDLUTEnd::
 	sTileRefrenceLoopCounter:: 
 	sCharblockResolveCounter:: db
-	sDirtyCharblockFlags:: ds 32
+	sDirtyCharblockFlags:: ds $20
 	; 5740 bytes free
 
 SECTION "Charblock Data", SRAM
