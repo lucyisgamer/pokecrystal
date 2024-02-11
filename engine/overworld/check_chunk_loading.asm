@@ -194,9 +194,3 @@ LoadChunk:
 	or a, d
 	ld [wNewChunkFlags], a
 	ret
-	
-	;farcall CopyChunkHeader
-	;farcall MarkUnrefrencedBlocks
-	;farcall UpdateBlockset
-	;farcall UpdateTileset
-	;farcall LoadChunkToMapBuffer

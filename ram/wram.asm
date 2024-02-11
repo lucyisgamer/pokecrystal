@@ -259,14 +259,6 @@ wTilemap::
 wTilemapEnd::
 
 
-; This union spans 480 bytes.
-SECTION UNION "Miscellaneous", WRAM0 ; Unused while in the overworld
-
-; surrounding tiles
-; This buffer determines the size for the rest of the union;
-; it uses exactly 480 bytes.
-
-
 
 SECTION UNION "Miscellaneous", WRAM0
 
@@ -3088,8 +3080,8 @@ wPokeAnimBitmaskCurBit:: db
 wPokeAnimBitmaskBuffer:: ds 7
 	ds 2
 wPokeAnimStructEnd::
-wOutdatedTileFlags:: ds 384 / 8
 
+SECTION "Charblock Flags", WRAMX
 wDecompressedCharblockBuffer::
 wDecompressedCharblockTileIndices:: ds 8
 wDecompressedCharblockCollision:: ds 4
@@ -3097,12 +3089,12 @@ wDecompressedCharblockCollision:: ds 4
 wDecompressedCharblockTileLength:: db
 wDecompressedCharblockTileIDs:: ds 32
 wDecompressedCharblockAttributes:: ds 16
+wDecompressedCharblockBufferEnd::
 wCharblockBufferID:: dw
 wCharblockBufferSlotID:: db
-
-SECTION "Surrounding Attributes", WRAMX ; pinned to $D4A0
-wSurroundingAttr:: ds SCREEN_HEIGHT * SCREEN_WIDTH
-; a lot of bytes free
+	
+wOutdatedTileFlags:: ds 384 / 8
+wOutdatedTileFlagsEnd::
 
 SECTION "GBC Video", WRAMX, ALIGN[8]
 

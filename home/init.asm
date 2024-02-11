@@ -198,6 +198,11 @@ ClearWRAM::
 	inc a
 	cp 8
 	jr c, .bank_loop
+	ld a, BANK(wCharblockBufferID)
+	ldh [rSVBK], a
+	ld a, $FF
+	ld [wCharblockBufferID], a
+	ld [wCharblockBufferID + 1], a
 	ret
 
 ClearsScratch::

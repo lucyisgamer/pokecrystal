@@ -256,6 +256,8 @@ ROMX $101
 	"Indices 0"
 ROMX $105
 	"Blocks 0"
+ROMX $201
+	"Tiles 0"
 ROMX $E01
 	"Chunks 0"
 
@@ -283,9 +285,8 @@ WRAMX 1
 	"even more WRAM 1 shit"
 WRAMX 2
 	"Pic Animations"
-WRAMX 3
-	org $d4a0 ; this must be the same offset within the bank as the tilemap or things will go very wrong
-	"Surrounding Attributes"
+	org $d28C
+	"Charblock Flags"
 WRAMX 5
 	align 8
 	"GBC Video"

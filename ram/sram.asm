@@ -182,4 +182,6 @@ SECTION "Chunk Load LUT", SRAM
 	; 5740 bytes free
 
 SECTION "Charblock Data", SRAM
-	sCharblockData:: ds $2000 ; this stores interleaved tile ids and attribute data
+	sCharblockData:: 
+	sCharblockTiles:: ds $1000
+	sCharblockAttributes:: ds $1000

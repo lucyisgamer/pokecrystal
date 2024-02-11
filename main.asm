@@ -631,6 +631,9 @@ INCBIN "map/headers/headers0.bin"
 SECTION "Chunk Headers 1", ROMX
 INCBIN "map/headers/headers1.bin"
 
+SECTION "Tiles 0", ROMX
+INCBIN "map/tileset.2bpp"
+
 SECTION "Indices 0", ROMX
 INCBIN "map/indices/indices0.bin"
 

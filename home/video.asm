@@ -456,3 +456,143 @@ AnimateTileset::
 	pop af
 	rst Bankswitch
 	ret
+
+TileDMA::
+	ldh a, [rHDMA5]
+	and a, $80
+	ret z ; another dma transfer is active, abort!
+	ldh a, [hROMBank]
+	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackup], a
+
+    ldh a, [rSVBK]
+    push af
+    ld a, BANK(wOutdatedTileFlags)
+    ldh [rSVBK], a
+    ld de, $0000
+    ld hl, wOutdatedTileFlags
+.firstSearch
+    ld a, [hl]
+    and a
+    jr nz, .secondSearch
+    inc l
+    jr nz, .firstSearch
+    and a ; no tiles need DMA, so clear carry and exit
+    ret
+.secondSearch
+	ldh a, [hROMBank] ; we know now we need to copy a tile, save our current rom bank
+	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackup], a
+
+    ld a, l
+    sub a, LOW(wOutdatedTileFlags)
+    sla a
+    sla a
+    sla a
+    ld e, a
+    dec e
+    rl d
+    ld a, [hl]
+    ld b, $7F
+.loop
+    inc e
+    rlc b
+    rrca
+    jr nc, .loop
+    ld a, b
+    and a, [hl]
+    ld [hl], a
+    ld b, d
+    ld c, e ; bc has our slot we need to dma into
+
+    sla e
+    rl d
+    ld hl, sTileIDLUT
+    add hl, de
+    ld a, BANK(sTileIDLUT)
+    call OpenSRAM
+    ld d, [hl]
+    inc hl
+    ld e, [hl] ; de now has the tle id we need to dma
+    call CloseSRAM
+
+.calcROMBank
+    swap d ; amazingly, this is 25% faster and smaller than just shifting by 4
+    swap e
+    ld a, e
+    and a, $0F
+    or a, d ; the hardware doesn't check the bottom 4 bits of the source address
+	ld d, a
+    xor a
+    rlc d
+    rlca
+    rlc d
+    rlca
+	inc a ; bank X00 isn't accessible bc mbc30 shenanigans
+	scf ; set bit 6 of d
+    rr d
+    srl d
+    ld h, HIGH(TILES_START_BANK)
+	di ; interrupts could cause us problems. best avoid them
+	rst BigBankswitch
+	ld a, d
+	ldh [rHDMA1], a
+	ld a, e
+	ldh [rHDMA2], a
+
+.calcVRAMBank
+	ld d, $00
+	sla c
+	rl b
+	ld a, b
+	cp a, 1
+	ccf
+	rl d
+	ldh a, [rVBK]
+	push af
+	ld a, d
+	ldh [rVBK], a ; VRAM bank is now set
+
+.calcVRAMAddr
+	sla c
+	rl b
+	sla c
+	rl b
+	sla c
+	rl b
+	res 5, b ; bc now points to the right offset within map tiles in VRAM
+	ld b, $00
+	ld hl, $8800 ; start of the map tiles
+	add hl, bc ; hl now points to the correct tile
+	ld a, h
+	ldh [rHDMA3], a
+	ld a, l
+	ldh [rHDMA4], a ; destination address now set up
+
+.timingCheck ; starting a transfer during HBLANK causes problems
+	ldh a, [rSTAT]
+	and a, %00000011
+	jr z, .timingCheck
+	ld a, SINGLE_TILE_DMA
+	ldh [rHDMA5], a
+
+.doneCheck
+	ldh a, [rHDMA5]
+	and a, $80
+	jr z, .doneCheck
+	pop af
+	ldh [rVBK], a ; restore VRAM bank
+	ldh a, [hTempBankHigh]
+	ld h, a
+	ldh a, [hTempBank]
+	rst BigBankswitch ; restore our ROM bank
+	pop af
+	ldh [rSVBK], a
+	scf
+	reti
+
+
+DEF SINGLE_TILE_DMA EQU $80
+DEF TILES_START_BANK EQU $201

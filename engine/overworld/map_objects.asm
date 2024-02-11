@@ -2197,7 +2197,7 @@ HideAllObjects:
 
 UpdateObjectFrozen:
 	push bc
-	call CheckObjectCoveredByTextbox
+	;call CheckObjectCoveredByTextbox
 	pop bc
 	jr c, SetFacing_Standing
 	push bc

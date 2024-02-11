@@ -1,6 +1,6 @@
 DEF CHARBLOCK_SIZE EQU $40
 DEF BLOCKSET_START_BANK EQU $101
-DEF CHARBLOCK_START_BANK EQU $201
+DEF CHARBLOCK_START_BANK EQU $105
 
 CopyBlocksetIDs::
 
@@ -125,11 +125,14 @@ ResolveCharblockLUT::
     jr nz, .dirtyLoop
     ld hl, sDirtyCharblockFlags
     ld d, $00
+    ld b, e
+    srl e
+    srl e
+    srl e
     add hl, de
     or a, [hl]
     ld [hl], a ; put the dirty flag into the right place
 
-    ld b, e
     ld hl, sCharblockLUT
     ld a, [sCharblockResolveCounter]
     ld e, a
@@ -221,10 +224,9 @@ CopyCharblock::
     ldh [rSVBK], a ; switch WRAM bank
 
     ld a, [wCharblockBufferID]
-    ld b, a
-    ld a, [wCharblockBufferID + 1]
-    cp a, b
+    inc a
     jp nz, .finished
+    ld a, [wCharblockBufferID + 1]
     inc a
     jp nz, .finished
 
@@ -235,13 +237,13 @@ CopyCharblock::
     ld hl, sDirtyCharblockFlags
     ld e, $00 ; e holds the index of whatever charblock we're fucking with
 .outerLoop
-    ld d, $07
+    ld d, $08
     ld a, [hli]
 .searchLoop
     rrca
     jr c, .found
     inc e
-    jp z, .finished
+    jp z, .noMore
     dec d
     jr z, .outerLoop
     jr .searchLoop
@@ -260,13 +262,24 @@ CopyCharblock::
     ld a, l
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
-    ld bc, CHARBLOCK_START_BANK - 1 ; calculate the bank and address that holds the charblock
+
+    lb bc, HIGH(CHARBLOCK_START_BANK), $00 ; calculate the bank and address that holds the charblock
 REPT 6 ; log2(CHARBLOCK_SIZE)
     sla l
     rl h
     rl c
 ENDR
-    inc c
+    sla h ; adjust for rom banks being only 1/4 of the address space
+    rl c
+    sla h
+    rl c
+    scf ; sneaky way to set the sixth bit of h
+    rr h
+    srl h
+
+    ld a, LOW(CHARBLOCK_START_BANK)
+    add a, c
+    ld c, a
     ld de, wDecompressedCharblockBuffer
     ld a, CHARBLOCK_SIZE
     and a ; clear carry flag
@@ -277,6 +290,13 @@ ENDR
     pop af
     ldh [rSVBK], a ; return to our old wram bank
     and a ; make sure carry flag is clear
+    ret
+
+.noMore
+    call CloseSRAM
+    pop af
+    ldh [rSVBK], a ; return to our old wram bank
+    scf ; make sure carry flag is clear
     ret
 
 ResolveCharblockTiles::
@@ -335,42 +355,39 @@ else
     jr nz, .newLoop ; if not, don't bother bounds checking
 endc
 .slotFound
-    ld a, l
-    sub a, LOW(sTileRefrenceCounts - $80)
-    ld l, a
-    ld a, h
-    sbc a, HIGH(sTileRefrenceCounts - $80)
+    dec hl
+    ld a, h ; the low byte of hl is already adjusted, so we don't need to mess with it
+    sub a, HIGH(sTileRefrenceCounts - $80)
     ld h, a
     call PutSlotIDAndUpdateRefrenceCount
 .insertID
     push hl
     sla l
     rl h
-    ld a, l
-    add a, LOW(sTileIDLUT)
-    ld l, a
     ld a, h
-    adc a, HIGH(sTileIDLUT)
+    add a, HIGH(sTileIDLUT - $100) ; tile numbers start at $80 (becomes $100 when shifted left)
     ld h, a
-    ld d, [hl]
+    ld [hl], d
     inc hl
-    ld e, [hl]
+    ld [hl], e
     pop hl
 
 .markDirty
+    ld a, l
+    and a, %00000111
+    ld d, a
+    
     ld a, %10000000
-    ld d, $00
 REPT 3 ; divide hl by 8 to convert from bytes to bits
     srl h
     rr l
-    rl d
 ENDR
     inc d
 .dirtyLoop
     rlca
     dec d
     jr nz, .dirtyLoop
-    ld de, wOutdatedTileFlags
+    ld de, wOutdatedTileFlags - ($80 / 8) ; tile numbers start at $80
     add hl, de
     or a, [hl]
     ld [hl], a
@@ -383,6 +400,7 @@ ENDR
     ld l, a
     ld a, h
     sbc a, HIGH(sTileIDLUT - $100) ; this is an elegant way to get the slot number
+    ld h, a
     srl h
     rr l ; divide by 2
     call PutSlotIDAndUpdateRefrenceCount
@@ -394,15 +412,16 @@ ENDR
     jr .loop
 
 .finished
-    ld a, BANK(sCharblockData)
-    call OpenSRAM
     call PutCharblock
-
-
+    call CloseSRAM
+    
     ld a, $FF
     ld [wCharblockBufferID], a
     ld [wCharblockBufferID + 1], a
-
+    pop af
+    ldh [rSVBK], a
+    ret
+    
 
 PutSlotIDAndUpdateRefrenceCount:
     ld a, l
@@ -415,15 +434,101 @@ PutSlotIDAndUpdateRefrenceCount:
     ld [bc], a
     inc bc
     inc bc
+    push de
     ld d, h
     ld e, l
-    ld hl, sTileRefrenceCounts
+    ld hl, sTileRefrenceCounts - $80 ; tile numbers start at $80
     add hl, de
     inc [hl]
     ld h, d
     ld l, e
+    pop de
     ret
-
-PutCharblock:: ; assumes we're already in the correct banks!
-    ld hl, sCharblockData
     
+PutCharblock:: ; assumes we're already in the correct banks!
+    ld a, BANK(sCharblockData)
+    call OpenSRAM
+    ld a, [wCharblockBufferSlotID]
+    swap a
+    ld e, a
+    and a, $0F
+    ld d, a
+    ld a, e
+    and a, $F0
+    ld e, a ; faster way to shift left by 4
+    ld hl, sCharblockAttributes
+    add hl, de ; hl now points to the right place in sCharblockTiles
+    push hl
+    ld de, wDecompressedCharblockTileIndices
+    ld b, HIGH(wDecompressedCharblockTileIDs)
+.tileLoop
+    ld c, LOW(wDecompressedCharblockTileIDs)
+    ld a, [de]
+    and a, $0F
+    sla a
+    add a, c ; bc now points to the high byte of our tile id
+    ld c, a
+    ld a, [bc]
+    ld [hl], a ; put our high byte
+    inc c
+    res 4, h
+    ld a, [bc]
+    sub a, $80
+    ld [hli], a ; and put our low byte
+    set 4, h
+
+    ld c, LOW(wDecompressedCharblockTileIDs)
+    ld a, [de]
+    swap a
+    and a, $0F
+    sla a
+    add a, c ; bc now points to the high byte of our tile id
+    ld c, a
+    ld a, [bc]
+    ld [hl], a ; put our high byte
+    inc c
+    res 4, h
+    ld a, [bc]
+    sub a, $80
+    ld [hli], a ; and put our low byte
+    set 4, h
+
+    inc e
+    ld a, e
+    cp a, LOW(wDecompressedCharblockCollision)
+    jr nz, .tileLoop
+    
+    pop hl
+    ld de, wDecompressedCharblockAttributes
+.attrLoop
+    ld a, [de]
+    or a, [hl]
+    ld [hli], a
+    inc e
+    ld a, e
+    cp a, LOW(wDecompressedCharblockBufferEnd)
+    jr nz, .attrLoop
+
+.done
+    ld a, BANK(sDirtyCharblockFlags)
+    call OpenSRAM
+    ld a, [wCharblockBufferSlotID]
+    ld e, a
+    and a, %00000111
+    srl e
+    srl e
+    srl e
+    ld d, $00
+    ld hl, sDirtyCharblockFlags
+    add hl, de
+    
+    ld d, a
+    inc d
+    ld a, $7F
+.bitLoop
+    rlca
+    dec d
+    jr nz, .bitLoop
+    and a, [hl]
+    ld [hl], a
+    ret

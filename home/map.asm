@@ -85,13 +85,25 @@ GetMapSceneID::
 	ret
 
 OverworldTextModeSwitch::
-	call LoadMapPart
-	call SwapTextboxPalettes
-	ret
 
 LoadMapPart::
 	call GetScreenCoordinates
+	ld a, BANK(sCharblockData)
+	call OpenSRAM
+
+	ld hl, wTilemap
+	ld a, HIGH(sCharblockTiles)
+	ld [wTilesetBlocksAddress + 1], a
+	ld a, LOW(sCharblockTiles)
+	ld [wTilesetBlocksAddress], a
 	call LoadMetatiles
+	ld hl, wAttrmap
+	ld a, HIGH(sCharblockAttributes)
+	ld [wTilesetBlocksAddress + 1], a
+	ld a, LOW(sCharblockAttributes)
+	ld [wTilesetBlocksAddress], a
+	call LoadMetatiles
+	call CloseSRAM
 	ret
 
 GetScreenCoordinates:: ; Gets the coordinates of the top left 16*16 tile of the screen within the tilemap
@@ -143,11 +155,10 @@ GetScreenCoordinates:: ; Gets the coordinates of the top left 16*16 tile of the 
 	ld [wScreenXCoord], a
 	ret
 
-LoadMetatiles:: ; This is kind of a mess but it actually works surprisingly well... unless the game gets paused while the player is moving
-	ldh a, [hROMBank]
-	push af
-	ld a, [wTilesetBlocksBank]
-	rst Bankswitch
+LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
+	; wTilesetBlocksAddress points to whatever buffer we're loading from
+	; This is kind of a mess but it actually works surprisingly well... unless the game gets paused while the player is moving
+
 	; Player is 4 16 x 16px tiles right and down of the left edge of the screen.
 	; If player coordinates are odd, the metatile is half cut off
 	xor a
@@ -168,7 +179,7 @@ LoadMetatiles:: ; This is kind of a mess but it actually works surprisingly well
 	ld a, d
 	ld [wBlockY], a
 
-	ld hl, wTilemap
+	; ld hl, wTilemap
 
 	ld a, b
 	and a, $01 ; Clear out all of b except for bit 1, to indicate parity
@@ -311,8 +322,6 @@ LoadMetatiles:: ; This is kind of a mess but it actually works surprisingly well
 	jp nz, .loop
 
 .done:
-	pop af
-	rst Bankswitch
 	ret
 
 ReturnToMapFromSubmenu::
@@ -553,129 +562,6 @@ ENDR
 
 	pop af
 	rst Bankswitch
-	ret
-
-LoadChunkToMapBuffer::
-	; Loads a 16 * 16 metatile chunk to the map block buffer
-	; Chunk coordinates should be specified as 8 bit x and y in wChunkX and wChunkY respecitvely
-	; Quadrant chunk needs to go into should be specified as the lower 2 bits of wChunkQuadrant - 00 is top left, 01 is top right, 10 is bottom left, 11 is bottom right
-	ldh a, [hROMBank]
-	push af
-	ld a, [wChunkHeader + CHARBLOCK_BANK]; Get charblock bank
-	or a, $C0 ; force chunk bank to be at least $C0 to prevent bad bank switches when loading uninitialized chunks
-	rst Bankswitch
-
-	ld d, $00
-	ld e, $00
-	ld a, [wChunkQuadrant]
-	rrca ; Put bit 0 of b into the carry
-	jr nc, .left
-	ld e, $10 ; 
-.left:	
-	rrca ; Put bit 1 of b into the carry
-	jr nc, .top
-	ld d, $02
-.top ; de now has the offset within wOverworldMapBlocks
-	ld hl, wOverworldMapBlocks
-	add hl, de
-	ld d, h
-	ld e, l
-	ld a, [wChunkHeader + CHARBLOCK_POINTER_IN_BANK]
-	ld h, a
-	ld a, [wChunkHeader + CHARBLOCK_POINTER_IN_BANK + 1]
-	ld l, a
-	set 6, h
-	; cp a, $00 ; TODO: this is fucking dumb. Too bad!
-	;call z, DecompressAndCopy1bpc
-	; cp a, $01
-	;call z, DecompressAndCopy2bpc
-	; cp a, $02
-	;call z, DecompressAndCopy4bpc
-	; cp a, $03
-	call DecompressAndCopy8bpc
-
-
-	ld hl, wChunkCoordsArray ; put the coordinates of the chunk we just loaded into the chunk coords array to prevent unnecessary loading
-	ld a, [wChunkQuadrant]
-	rlca
-	ld e, a
-	ld d, $00
-	add hl, de
-	ld a, [wChunkX]
-	ld [hli], a
-	ld a, [wChunkY]
-	ld [hl], a
-
-	pop af
-	rst Bankswitch
-	ret
-
-DecompressAndCopy8bpc::
-	; "Decompresses" and copies the 8 bit per charblock chunk in the current bank at de to hl, taking into account the block size
-	ld a, $10
-	ld [wScratchByte], a
-.loop
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	ld a, [hli]
-	ld [de], a
-	inc de
-	
-	ld a, $10 ; 16 bit adding $0010 to de
-	add a, e  ; This isn't particularly efficient, too bad!
-	ld e, a	  
-	ld a, $00
-	adc a, d
-	ld d, a
-	
-	push hl
-	ld hl, wScratchByte
-	dec [hl]
-	pop hl
-	jr nz, .loop
 	ret
 
 LoadMapStatus::
@@ -934,8 +820,9 @@ ScrollMapUp::
 	hlcoord 0, 0
 	ld de, wBGMapBuffer
 	call BackupBGMapRow
-	ld c, 2 * SCREEN_WIDTH
-	call ScrollBGMapPalettes
+	hlcoord 0, 0, wAttrmap
+	ld de, wBGMapPalBuffer
+	call BackupBGMapRow
 	ld a, [wBGMapAnchor]
 	ld e, a
 	ld a, [wBGMapAnchor + 1]
@@ -949,8 +836,9 @@ ScrollMapDown::
 	hlcoord 0, SCREEN_HEIGHT - 2
 	ld de, wBGMapBuffer
 	call BackupBGMapRow
-	ld c, 2 * SCREEN_WIDTH
-	call ScrollBGMapPalettes
+	hlcoord 0, SCREEN_HEIGHT - 2, wAttrmap
+	ld de, wBGMapPalBuffer
+	call BackupBGMapRow
 	ld a, [wBGMapAnchor]
 	ld l, a
 	ld a, [wBGMapAnchor + 1]
@@ -972,8 +860,9 @@ ScrollMapLeft::
 	hlcoord 0, 0
 	ld de, wBGMapBuffer
 	call BackupBGMapColumn
-	ld c, 2 * SCREEN_HEIGHT
-	call ScrollBGMapPalettes
+	hlcoord 0, 0, wAttrmap
+	ld de, wBGMapPalBuffer
+	call BackupBGMapColumn	
 	ld a, [wBGMapAnchor]
 	ld e, a
 	ld a, [wBGMapAnchor + 1]
@@ -987,8 +876,9 @@ ScrollMapRight::
 	hlcoord SCREEN_WIDTH - 2, 0
 	ld de, wBGMapBuffer
 	call BackupBGMapColumn
-	ld c, 2 * SCREEN_HEIGHT
-	call ScrollBGMapPalettes
+	hlcoord SCREEN_WIDTH - 2, 0, wAttrmap
+	ld de, wBGMapPalBuffer
+	call BackupBGMapColumn	
 	ld a, [wBGMapAnchor]
 	ld e, a
 	and %11100000
