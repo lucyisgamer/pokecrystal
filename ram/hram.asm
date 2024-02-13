@@ -146,7 +146,6 @@ hSPBuffer::  dw
 hBGMapUpdate::    db
 hBGMapTileCount:: db
 
-	ds 1
 
 hMapAnims::      db
 hTileAnimFrame:: db

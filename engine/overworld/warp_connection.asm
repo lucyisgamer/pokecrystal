@@ -154,7 +154,7 @@ LoadMapTimeOfDay::
 
 LoadMapGraphics::
 	call LoadMapTileset
-	call LoadTilesetGFX
+	;call LoadTilesetGFX
 	xor a
 	ldh [hMapAnims], a
 	xor a

@@ -461,16 +461,13 @@ TileDMA::
 	ldh a, [rHDMA5]
 	and a, $80
 	ret z ; another dma transfer is active, abort!
-	ldh a, [hROMBank]
-	ldh [hROMBankBackup], a
-	ldh a, [hROMBankHigh]
-	ldh [hROMBankBackup], a
-
+	
     ldh a, [rSVBK]
     push af
     ld a, BANK(wOutdatedTileFlags)
     ldh [rSVBK], a
-    ld de, $0000
+
+	
     ld hl, wOutdatedTileFlags
 .firstSearch
     ld a, [hl]
@@ -478,22 +475,26 @@ TileDMA::
     jr nz, .secondSearch
     inc l
     jr nz, .firstSearch
+	pop af ; restore our wram bank before bailing
+	ldh [rSVBK], a
     and a ; no tiles need DMA, so clear carry and exit
     ret
 .secondSearch
-	ldh a, [hROMBank] ; we know now we need to copy a tile, save our current rom bank
-	ldh [hROMBankBackup], a
+	ldh a, [hROMBank] ; we know we need to copy a tile, save our current rom bank
+	ld c, a
 	ldh a, [hROMBankHigh]
-	ldh [hROMBankBackup], a
+	ld b, a
+	push bc
 
+	ld d, $00
     ld a, l
     sub a, LOW(wOutdatedTileFlags)
     sla a
     sla a
-    sla a
+    sla a ; shift out our ninth bit for later
     ld e, a
-    dec e
-    rl d
+    dec e ; dec weirdly doesn't touch the carry flag
+    rl d ; shift that ninth bit into d
     ld a, [hl]
     ld b, $7F
 .loop
@@ -556,14 +557,16 @@ TileDMA::
 	ldh [rVBK], a ; VRAM bank is now set
 
 .calcVRAMAddr
+	ld a, b
 	sla c
-	rl b
+	rla
 	sla c
-	rl b
+	rla
 	sla c
-	rl b
-	res 5, b ; bc now points to the right offset within map tiles in VRAM
-	ld b, $00
+	rla
+	xor a, %00001000 ; flip to account for tile $00 being in the middle of VRAM
+	ld b, a
+
 	ld hl, $8800 ; start of the map tiles
 	add hl, bc ; hl now points to the correct tile
 	ld a, h
@@ -574,7 +577,8 @@ TileDMA::
 .timingCheck ; starting a transfer during HBLANK causes problems
 	ldh a, [rSTAT]
 	and a, %00000011
-	jr z, .timingCheck
+	cp a, $02 ; most reliable way to check timing
+	jr nz, .timingCheck
 	ld a, SINGLE_TILE_DMA
 	ldh [rHDMA5], a
 
@@ -584,9 +588,8 @@ TileDMA::
 	jr z, .doneCheck
 	pop af
 	ldh [rVBK], a ; restore VRAM bank
-	ldh a, [hTempBankHigh]
-	ld h, a
-	ldh a, [hTempBank]
+	pop hl
+	ld a, l
 	rst BigBankswitch ; restore our ROM bank
 	pop af
 	ldh [rSVBK], a

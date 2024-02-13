@@ -219,12 +219,17 @@ ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coo
 	jr nz, .search
 	ld [wNewChunkFlags], a
 	farcall LoadNewChunk
-	nop
 	farcall CopyBlocksetIDs
 .resolveLoop
 	farcall ResolveCharblockLUT
 	jr c, .resolveLoop
 	farcall ApplyCharblockLUT
+.charblockLoop
+	farcall TransferCharblock
+	jr c, .charblockLoop
+.tileLoop
+	call TileDMA
+	jr c, .tileLoop
 	ret
 
 

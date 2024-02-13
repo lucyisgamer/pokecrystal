@@ -1635,7 +1635,7 @@ ReloadTilesetAndPalettes::
 	; call SwitchToAnyMapAttributesBank
 	farcall UpdateTimeOfDayPal
 	call OverworldTextModeSwitch
-	call LoadTilesetGFX
+	;call LoadTilesetGFX
 	ld a, 9
 	call SkipMusic
 	pop af

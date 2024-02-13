@@ -38,7 +38,7 @@ processAsyncEvents:: ; runs after the overworld loop is done. put things that do
     db $14, RESOLVE_CHARBLOCK_LUT
     db $09, APPLY_CHARBLOCK_LUT
     db $20, TRANSFER_CHARBLOCK
-    db $01, DMA_TILE
+    db $04, DMA_TILE
     db $00, END ; this is here to provide a simple escape hatch
 
 DEF END EQU $00 ; jumps to a return to break out of processing
