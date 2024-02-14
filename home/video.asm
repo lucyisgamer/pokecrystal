@@ -565,6 +565,7 @@ TileDMA::
 	sla c
 	rla
 	xor a, %00001000 ; flip to account for tile $00 being in the middle of VRAM
+	and a, $0F
 	ld b, a
 
 	ld hl, $8800 ; start of the map tiles

@@ -197,21 +197,41 @@ ApplyCharblockLUT::
     ld a, b ; a now has the chunk quadrant we're working on
 
     ld de, wOverworldMapBlocks
-    add a, d ; de now points to the start of the chunk we're working on
-    ld d, a ; this only works if wOverworldMapBlocks is aligned to $100
+    bit 0, a
+    jr z, .left
+    set 4, e
+.left
+    bit 1, a
+    jr z, .top
+    set 1, d
+.top
 
     ld a, BANK(sCharblockLUT)
     call OpenSRAM ; open wide sram
 
     ld h, HIGH(sCharblockLUT) ; sCharblockLUT is also aligned to $100
+    ld b, $00 ; now that we can't use the address as a loop counter, we need a separate one
 .loop
+    inc b
+    jr z, .done
     ld a, [de]
     ld l, a
     ld a, [hl]
     ld [de], a
-    inc e
+    inc de
+    ld a, e
+    and a, $0F ; interlacing time
     jr nz, .loop
 
+    ld a, e
+    add a, $10
+    ld e, a
+    ld a, d
+    adc a, $00
+    ld d, a
+    jr .loop
+
+.done
     call CloseSRAM
     xor a
     ld [wNewChunkFlags + 1], a
@@ -262,22 +282,22 @@ CopyCharblock::
     ld a, l
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
-
-    lb bc, HIGH(CHARBLOCK_START_BANK), $00 ; calculate the bank and address that holds the charblock
+    xor a
+    ld b, HIGH(CHARBLOCK_START_BANK) ; calculate the bank and address that holds the charblock
 REPT 6 ; log2(CHARBLOCK_SIZE)
     sla l
     rl h
-    rl c
+    rla
 ENDR
     sla h ; adjust for rom banks being only 1/4 of the address space
-    rl c
+    rla
     sla h
-    rl c
+    rla
     scf ; sneaky way to set the sixth bit of h
     rr h
     srl h
 
-    ld a, LOW(CHARBLOCK_START_BANK)
+    ld c, LOW(CHARBLOCK_START_BANK)
     add a, c
     ld c, a
     ld de, wDecompressedCharblockBuffer

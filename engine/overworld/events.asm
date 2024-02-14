@@ -121,6 +121,10 @@ EnterMap:
 
 	call EnableLCD
 	farcall LoadMapPalettes
+	ld a, $10 ; TODO - update these to load the actual starting coordinates from the save file
+	ld [wXCoord + 1], a
+	ld a, $10
+	ld [wYCoord + 1], a
 	farcall SpawnPlayer
 	; ld b, b
 	farcall RefreshMapSprites

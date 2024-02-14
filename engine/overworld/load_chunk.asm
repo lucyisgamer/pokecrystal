@@ -56,7 +56,7 @@ LoadNewChunk::
     dw Unpack1bpc
     dw Unpack2bpc
     dw Unpack4bpc
-    dw Unpack8bpc
+    dw Copy8bpc
 
 Unpack1bpc:
 

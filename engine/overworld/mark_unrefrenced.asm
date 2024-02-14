@@ -5,9 +5,9 @@ MarkUnrefrencedBlocks::
     ld a, [wChunkQuadrant]
     ld b, a
     inc b
-    ld a, %10001000
+    ld a, %00010001
 .setFlag
-    rlca
+    rrca
     dec b
     jr nz, .setFlag
     cpl

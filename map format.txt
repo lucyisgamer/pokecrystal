@@ -16,12 +16,3 @@ Tiles are dealt with via reference counting from the loaded charblocks. If they 
 Charblocks themselves will have dedicated bits for each chunk quadrant. If all the bits are cleared, the charblock is eligible for replacement.
 This algorithm will likely prioritize simplicity over pure efficiency. It will, however, need to be designed to run in stages over multiple frames.
 Tiles or charblocks that become unreferenced won't get zeroed, they will simply be overwritten when a new piece of data needs a home.
-
-000 0
-100 4
-010 2
-110 6
-001 1
-101 5
-011 3
-111 7
