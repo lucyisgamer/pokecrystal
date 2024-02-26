@@ -46,7 +46,7 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 	cp a, $18
 	jr nc, .BottomSide
 	ld a, h
-	and a
+	and a, %11111100
     ret z; If none of these evaluated through we must be in the middle of the chunk, so return early
 	jr .Edge ; If only left or right got activated then we must be on an edge
 
@@ -119,7 +119,7 @@ CheckChunkLoading:: ; Uses the player's coordinates to check what chunks need to
 	ld a, $01
 	xor a, h
 	ld h, a
-	and a, $3
+	and a, $03
 	ld [wChunkQuadrant], a
 	jr LoadChunk
 

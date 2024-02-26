@@ -12,7 +12,6 @@ LoadNewChunk::
     ld a, [wNewChunkFlags]
     and a, $F0
     ret z ; if no new chunk loads are scheduled we can return early
-    ld hl, wChunkCoordsArray
     ld bc, $11FF
 .search
     rrc b ; b is used to figure out which chunk needs it's flag cleared
@@ -23,8 +22,8 @@ LoadNewChunk::
     ld a, b
     and a, $0F ; mask off just the new blockset flags
     ld d, a
-    ld a, b
-    and a, $F0 ; mask off just the new chunk flags
+    swap a
+
     cpl ; flip so we can clear just the flag we want
     ld b, a
     ld a, [wNewChunkFlags]
@@ -34,6 +33,7 @@ LoadNewChunk::
     ld a, c ; a now has the chunk quadrant we need to load
     ld [wChunkQuadrant], a ; save the quadrant for later
 
+    ld hl, wChunkCoordsArray
     sla c
     ld b, $00
     add hl, bc

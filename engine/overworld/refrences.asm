@@ -36,7 +36,8 @@ CopyBlocksetIDs::
     ld a, [hl]
     and a, $0F
     ld d, a
-    xor a
+    ld a, [hl]
+    and a, $F0
     ld [hli], a ; clear the flag that requested this function
 
     swap d
