@@ -4,6 +4,16 @@ DEF WATER_TILE EQU $01
 DEF WALL_TILE  EQU $0f
 DEF TALK       EQU $10
 
+DEF COLL_UP EQU %00000001
+DEF COLL_RIGHT EQU %00000010
+DEF COLL_DOWN EQU %00000100
+DEF COLL_LEFT EQU %00001000
+DEF LAND_NYBBLE EQU $00
+DEF WATER_NYBBLE EQU $10
+DEF WARP_NYBBLE EQU $20
+DEF LEDGE_NYBBLE EQU $30
+
+
 ; collision data types (see data/tilesets/*_collision.asm)
 ; TileCollisionTable indexes (see data/collision/collision_permissions.asm)
 DEF COLL_FLOOR             EQU $00

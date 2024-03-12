@@ -113,7 +113,8 @@ ResolveCharblockLUT::
     inc hl
     ld [hl], c
     rr d
-    rr e
+    rr e ; e now holds which slot this
+    call DerefrenceOldBlock
 .setDirtyBit
     ld a, e
     and a, %00000111
@@ -172,6 +173,7 @@ ResolveCharblockLUT::
     jr z, .finished
     ld a, b
     ld [sCharblockResolveCounter], a
+    call CloseSRAM
     scf
     ret
 
@@ -183,6 +185,93 @@ ResolveCharblockLUT::
     xor a
     ld [sCharblockResolveCounter], a
     call CloseSRAM
+    ret
+
+DerefrenceOldBlock:: ; derefrence the tiles in block e
+    push de ; de is the only register pair this function needs to save
+    ld a, BANK(sCharblockData) ; switch to the charblock data bank
+    ld [MBC3SRamBank], a
+    ldh a, [rSVBK] ; save our current WRAM bank
+    push af
+    ld a, BANK(wDecompressedCharblockBuffer)
+    ldh [rSVBK], a
+    swap e ; we're about to perform swapmagic to shift by 4
+    ld a, e
+    and a, $0F
+    ld d, a
+    ld a, e
+    and a, $F0
+    ld e, a
+    
+    ld hl, sCharblockAttributes ; we want the high bit first
+    add hl, de ; hl now points to the start of the block we're fucking with
+
+    ld de, wDecompressedCharblockBuffer
+    ld bc, $0022 ; we need $20 bytes to store the tile slots plus 2 more as a terminator
+    xor a
+    dec a
+    call ByteFill
+
+.loop
+    ld e, LOW(wDecompressedCharblockBuffer) ; the buffer doesn't cross a $100 boundary
+    ld b, $00
+    bit 3, [hl]
+    jr z, .bank0
+    inc b
+.bank0
+    res 4, h ; load from the tile ids instead
+    ld a, [hli] ; it's a cycle faster to use a and a subtraction instead of loading straight to c
+    set 4, h ; switch back to the attributes
+    sub a, $80 ; deal with tile ids starting at $80*
+    ld c, a ; bc now has the tile slot we need to check for
+
+.search
+    ld a, [de]
+    cp a, $FF
+    jr z, .newSlot ; we don't need to worry about overflow because there can only ever be 16 tiles per block
+    inc e ; incrementing here allows us to save one inc and one dec
+    cp a, b ; check if we have already found this slot id
+    jr nz, .next ; no? then try the next slot (we will ALWAYS find an empty slot)
+    ld a, [de]
+    cp a, c
+    jr z, .existing
+.next
+    inc e
+    jr .search ; we will always find an $FF byte eventually due to the terminator stuck to the end
+
+.newSlot
+    ld a, b ; put the slot id into the list
+    ld [de], a
+    ld a, c
+    inc e
+    ld [de], a
+.existing
+    ld a, l
+    and a, $0F ; this is very clever. since blocks are aligned to $10, the bottom 4 bits will only ever be 0
+    jr nz, .loop ; if we have moved to a new block.
+; the list is complete
+
+    ld a, BANK(sTileRefrenceCounts)
+    ld [MBC3SRamBank], a ; switch back to our original SRAM bank
+
+    ld e, LOW(wDecompressedCharblockBuffer) ; we still haven't touched d
+.loop
+    ld h, HIGH(sTileRefrenceCounts - $80) ; account for the $80 offset in tile slots
+    ld a, [de]
+    add a, h ; calculate our high address byte
+    ld h, a
+    inc e
+    ld a, [de]
+    ld l, a ; the tile slot already corresponds to the address of it's refrence count
+    dec [hl]
+    inc e
+    ld a, [de]
+    inc a
+    jr nz, .loop ; if the top byte of the next item isn't $FF, we still have items to process
+
+    pop af
+    ldh [rSVBK], a ; restore our WRAM bank  
+    pop de
     ret
 
 ApplyCharblockLUT::
@@ -313,7 +402,7 @@ ENDR
     and a ; make sure carry flag is clear
     ret
 
-.noMore
+.noMore ; it's time to STOP
     call CloseSRAM
     pop af
     ldh [rSVBK], a ; return to our old wram bank

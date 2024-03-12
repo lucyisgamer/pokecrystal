@@ -88,30 +88,32 @@ CheckOnWater::
 GetTileCollision::
 ; Get the collision type of tile a.
 
-	push de
-	push hl
+	; push de
+	; push hl
 
-	ld hl, TileCollisionTable
-	ld e, a
-	ld d, 0
-	add hl, de
+	; ld hl, TileCollisionTable
+	; ld e, a
+	; ld d, 0
+	; add hl, de
 
-	ldh a, [hROMBank]
-	push af
-	ld a, BANK(TileCollisionTable)
-	rst Bankswitch
-	ld e, [hl]
-	pop af
-	rst Bankswitch
+	; ldh a, [hROMBank]
+	; push af
+	; ld a, BANK(TileCollisionTable)
+	; rst Bankswitch
+	; ld e, [hl]
+	; pop af
+	; rst Bankswitch
 
-	ld a, e
-	and $f ; lo nybble only
+	; ld a, e
+	; and $f ; lo nybble only
 
-	pop hl
-	pop de
+	; pop hl
+	; pop de
 	ret
 
 CheckGrassTile::
+	scf
+	ret ; bypass this for now
 	ld d, a
 	and $f0
 	cp HI_NYBBLE_TALL_GRASS

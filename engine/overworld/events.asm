@@ -1204,7 +1204,7 @@ TryTileCollisionEvent::
 	scf
 	ret
 
-RandomEncounter::
+RandomEncounter:: ; TODO - need this to be dynamic
 ; Random encounter
 
 	call CheckWildEncounterCooldown

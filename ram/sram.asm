@@ -176,7 +176,7 @@ SECTION "Chunk Load LUT", SRAM
 	sTileRefrenceCounts:: ds $180 ; refrence counters for each tile
 	sTileIDLUT:: ds $300
 	sTileIDLUTEnd::
-	sTileRefrenceLoopCounter:: 
+	sTileRefrenceLoopCounter::
 	sCharblockResolveCounter:: db
 	sDirtyCharblockFlags:: ds $20
 	; 5740 bytes free
