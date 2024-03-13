@@ -255,7 +255,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     ld [MBC3SRamBank], a ; switch back to our original SRAM bank
 
     ld e, LOW(wDecompressedCharblockBuffer) ; we still haven't touched d
-.loop
+.decrementLoop
     ld h, HIGH(sTileRefrenceCounts - $80) ; account for the $80 offset in tile slots
     ld a, [de]
     add a, h ; calculate our high address byte
@@ -267,7 +267,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     inc e
     ld a, [de]
     inc a
-    jr nz, .loop ; if the top byte of the next item isn't $FF, we still have items to process
+    jr nz, .decrementLoop ; if the top byte of the next item isn't $FF, we still have items to process
 
     pop af
     ldh [rSVBK], a ; restore our WRAM bank  

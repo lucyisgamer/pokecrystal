@@ -294,8 +294,8 @@ MACRO object_struct
 \1Action::         db
 \1StepFrame::      db
 \1Facing::         db
-\1Tile::           db
-\1LastTile::       db
+\1Collision::      db
+\1LastCollision::  db
 \1MapXHigh::       db
 \1MapXLow::        db
 \1MapYHigh::       db

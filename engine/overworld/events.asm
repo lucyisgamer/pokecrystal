@@ -1262,7 +1262,7 @@ CanUseSweetScent::
 	jr nc, .no
 
 .ice_check
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	call CheckIceTile
 	jr z, .no
 	scf
@@ -1333,7 +1333,7 @@ ChooseWildEncounter_BugContest::
 	ret
 
 TryWildEncounter_BugContest:
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	call CheckSuperTallGrassTile
 	ld b, 40 percent
 	jr z, .ok

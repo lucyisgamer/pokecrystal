@@ -1173,11 +1173,11 @@ GetMovementPermissions::
 	and a, $3F
 	ld e, a
 	call GetCoordTile
-	ld [wPlayerTile], a
+	ld [wPlayerCollision], a
 	call .CheckHiNybble
 	ret nz
 
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	and 7
 	ld hl, .MovementPermissionsData
 	add l
@@ -1212,13 +1212,13 @@ GetMovementPermissions::
 	push de
 	inc e
 	call GetCoordTile
-	ld [wTileDown], a
+	ld [wCollisionDown], a
 	call .Down
 
 	pop de
 	dec e
 	call GetCoordTile
-	ld [wTileUp], a
+	ld [wCollisionUp], a
 	call .Up
 	ret
 
@@ -1231,20 +1231,20 @@ GetMovementPermissions::
 	push de
 	dec d
 	call GetCoordTile
-	ld [wTileLeft], a
+	ld [wCollisionLeft], a
 	call .Left
 
 	pop de
 	inc d
 	call GetCoordTile
-	ld [wTileRight], a
+	ld [wCollisionRight], a
 	call .Right
 	ret
 
 .Down:
 	call .CheckHiNybble
 	ret nz
-	ld a, [wTileDown]
+	ld a, [wCollisionDown]
 	and %111
 	cp COLL_UP_WALL & %111 ; COLL_UP_BUOY & %111
 	jr z, .ok_down
@@ -1262,7 +1262,7 @@ GetMovementPermissions::
 .Up:
 	call .CheckHiNybble
 	ret nz
-	ld a, [wTileUp]
+	ld a, [wCollisionUp]
 	and %111
 	cp COLL_DOWN_WALL & %111 ; COLL_DOWN_BUOY & %111
 	jr z, .ok_up
@@ -1280,7 +1280,7 @@ GetMovementPermissions::
 .Right:
 	call .CheckHiNybble
 	ret nz
-	ld a, [wTileRight]
+	ld a, [wCollisionRight]
 	and %111
 	cp COLL_LEFT_WALL & %111 ; COLL_LEFT_BUOY & %111
 	jr z, .ok_right
@@ -1298,7 +1298,7 @@ GetMovementPermissions::
 .Left:
 	call .CheckHiNybble
 	ret nz
-	ld a, [wTileLeft]
+	ld a, [wCollisionLeft]
 	and %111
 	cp COLL_RIGHT_WALL & %111 ; COLL_RIGHT_BUOY & %111
 	jr z, .ok_left
@@ -1358,13 +1358,13 @@ GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) a
 .Directions:
 	;   x,  y
 	db  0,  1
-	dw wTileDown
+	dw wCollisionDown
 	db  0, -1
-	dw wTileUp
+	dw wCollisionUp
 	db -1,  0
-	dw wTileLeft
+	dw wCollisionLeft
 	db  1,  0
-	dw wTileRight
+	dw wCollisionRight
 
 GetCoordTile:: ; make this handle the new layout
 ; Get the collision byte for tile d, e

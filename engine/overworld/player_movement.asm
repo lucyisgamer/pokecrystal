@@ -110,7 +110,7 @@ DoPlayerMovement::
 ; Tiles such as waterfalls and warps move the player
 ; in a given direction, overriding input.
 
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	ld c, a
 	call CheckWhirlpoolTile
 	jr c, .not_whirlpool
@@ -266,7 +266,7 @@ DoPlayerMovement::
 	cp 2
 	jr z, .bump
 
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	call CheckIceTile
 	jr nc, .ice
 
@@ -344,7 +344,7 @@ DoPlayerMovement::
 	ret
 
 .TryJump:
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	ld e, a
 	and $f0
 	cp HI_NYBBLE_LEDGES
@@ -541,7 +541,7 @@ DoPlayerMovement::
 	ld h, [hl]
 	ld l, a
 	ld a, [hl]
-	ld [wWalkingTile], a
+	ld [wWalkingCollision], a
 	ret
 
 MACRO player_action
@@ -552,12 +552,12 @@ ENDM
 
 .action_table:
 .action_table_1
-	player_action STANDING, FACE_CURRENT, 0,  0, wPlayerTile
+	player_action STANDING, FACE_CURRENT, 0,  0, wPlayerCollision
 .action_table_1_end
-	player_action RIGHT,    FACE_RIGHT,   1,  0, wTileRight
-	player_action LEFT,     FACE_LEFT,   -1,  0, wTileLeft
-	player_action UP,       FACE_UP,      0, -1, wTileUp
-	player_action DOWN,     FACE_DOWN,    0,  1, wTileDown
+	player_action RIGHT,    FACE_RIGHT,   1,  0, wCollisionRight
+	player_action LEFT,     FACE_LEFT,   -1,  0, wCollisionLeft
+	player_action UP,       FACE_UP,      0, -1, wCollisionUp
+	player_action DOWN,     FACE_DOWN,    0,  1, wCollisionDown
 
 .CheckNPC:
 ; Returns 0 if there is an NPC in front that you can't move
@@ -668,7 +668,7 @@ ENDM
 	and d
 	jr nz, .NotWalkable
 
-	ld a, [wWalkingTile]
+	ld a, [wWalkingCollision]
 	call .CheckWalkable
 	jr c, .NotWalkable
 
@@ -676,25 +676,6 @@ ENDM
 	ret
 
 .NotWalkable:
-	scf
-	ret
-
-.CheckSurfPerms: ; Return 0 if moving in water, or 1 if moving onto land. Otherwise, return carry.
-
-	ld a, [wTilePermissions]
-	ld d, a
-	ld a, [wFacingDirection]
-	and d
-	jr nz, .NotSurfable
-
-	ld a, [wWalkingTile]
-	call .CheckSurfable
-	jr c, .NotSurfable
-
-	and a
-	ret
-
-.NotSurfable:
 	scf
 	ret
 
@@ -712,6 +693,17 @@ ENDM
 	ret z
 	; scf
 	ret
+
+.CheckSurfPerms: ; Return 0 if moving in water, or 1 if moving onto land. Otherwise, return carry.
+
+	ld a, [wTilePermissions]
+	ld d, a
+	ld a, [wFacingDirection]
+	and a, d
+	scf
+	ret nz ; not surfable
+
+	ld a, [wWalkingCollision] ; fallthrough to CheckSurfable
 
 .CheckSurfable: ; Return 0 if tile a is water, or 1 if land. Otherwise, return carry.
 
@@ -759,7 +751,7 @@ CheckStandingOnIce::
 	jr z, .not_ice
 	cp $f0
 	jr z, .not_ice
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	call CheckIceTile
 	jr nc, .yep
 	ld a, [wPlayerState]

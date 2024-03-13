@@ -180,10 +180,10 @@ wTempObjectCopyYLow:: db
 wTempObjectCopyRadius:: db
 ENDU
 
-wTileDown::  db
-wTileUp::    db
-wTileLeft::  db
-wTileRight:: db
+wCollisionDown::  db
+wCollisionUp::    db
+wCollisionLeft::  db
+wCollisionRight:: db
 
 wTilePermissions::
 ; set if tile behavior prevents
@@ -1880,7 +1880,7 @@ wWalkingDirection:: db
 wFacingDirection:: db
 wWalkingX:: db
 wWalkingY:: db
-wWalkingTile:: db
+wWalkingCollision:: db
 	ds 6
 wPlayerTurningDirection:: db
 

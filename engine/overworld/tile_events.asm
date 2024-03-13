@@ -1,5 +1,5 @@
 CheckGrassCollision::
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	ld hl, .blocks
 	ld de, 1
 	call IsInArray
@@ -35,7 +35,7 @@ CheckCutCollision:
 	db -1
 
 GetWarpSFX::
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	ld de, SFX_ENTER_DOOR
 	cp COLL_DOOR
 	ret z

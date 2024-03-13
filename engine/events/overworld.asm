@@ -651,7 +651,7 @@ CheckMapCanWaterfall:
 	and $c
 	cp FACE_UP
 	jr nz, .failed
-	ld a, [wTileUp]
+	ld a, [wCollisionUp]
 	call CheckWaterfallTile
 	jr nz, .failed
 	xor a
@@ -680,7 +680,7 @@ Script_UsedWaterfall:
 .CheckContinueWaterfall:
 	xor a
 	ld [wScriptVar], a
-	ld a, [wPlayerTile]
+	ld a, [wPlayerCollision]
 	call CheckWaterfallTile
 	ret z
 	ld a, $1
