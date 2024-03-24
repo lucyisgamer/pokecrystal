@@ -48,6 +48,29 @@ ByteFill:: ; fill bc bytes with the value of a, starting at hl
 	jr nz, .PutByte
 	ret
 
+GetReallyFarByte:: ; retrieves a single byte from ha:bc, and returns it in a
+	ldh [hTempBank], a
+	ld a, h
+	ldh [hTempBankHigh], a
+	ldh a, [hROMBank]
+	ld l, a
+	ldh a, [hROMBankHigh]
+	ld h, a
+	push hl ; save our current bank
+
+	ldh a, [hTempBankHigh]
+	ld h, a
+	ldh a, [hTempBank]
+	rst BigBankswitch
+	ld a, [bc]
+	ldh [hFarByte], a
+
+	pop hl
+	ld a, l
+	rst BigBankswitch
+	ld a, [hFarByte]
+	ret
+
 GetFarByte:: ; retrieve a single byte from a:hl, and return it in a.
 	; bankswitch to new bank
 	ldh [hTempBank], a

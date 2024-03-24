@@ -171,14 +171,14 @@ CopyCoordsTileToLastCoordsTile:
 	ld [de], a
 	
 
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
-	ld hl, OBJECT_LAST_TILE
+	ld hl, OBJECT_LAST_COLL
 	add hl, bc
 	ld [hl], a
 	call SetTallGrassFlags
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
 	ret
@@ -208,15 +208,15 @@ UpdateTallGrassFlags:
 	add hl, bc
 	bit OVERHEAD_F, [hl]
 	jr z, .ok
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
 	call SetTallGrassFlags
 .ok
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
-	ld hl, OBJECT_LAST_TILE
+	ld hl, OBJECT_LAST_COLL
 	add hl, bc
 	ld a, [hl]
 	ret
@@ -326,7 +326,7 @@ GetNextTile: ; if the object format ever changes significantly, this function wi
 
 	call GetCoordTile
 	pop bc
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld [hl], a
 	ret
@@ -505,7 +505,7 @@ StepFunction_Reset:
 	push bc
 	call GetCoordTile
 	pop bc
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld [hl], a
 	call CopyCoordsTileToLastCoordsTile
@@ -657,7 +657,7 @@ MovementFunction_Strength:
 	dw .stop
 
 .start:
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
 	call CheckPitTile
@@ -2235,7 +2235,7 @@ UpdateObjectTile:
 	ld e, [hl]
 	call GetCoordTile
 	pop bc
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld [hl], a
 	call UpdateTallGrassFlags

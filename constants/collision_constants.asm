@@ -12,6 +12,7 @@ DEF LAND_NYBBLE EQU $00
 DEF WATER_NYBBLE EQU $10
 DEF WARP_NYBBLE EQU $20
 DEF LEDGE_NYBBLE EQU $30
+DEF GRASS_NYBBLE EQU $40
 
 
 ; collision data types (see data/tilesets/*_collision.asm)
@@ -82,7 +83,6 @@ DEF COLL_DOOR_75           EQU $75 ; unused
 DEF COLL_WARP_CARPET_LEFT  EQU $76
 DEF COLL_WARP_77           EQU $77 ; unused
 DEF COLL_WARP_CARPET_UP    EQU $78
-DEF COLL_DOOR_79           EQU $79 ; unused
 DEF COLL_STAIRCASE         EQU $7a
 DEF COLL_CAVE              EQU $7b
 DEF COLL_WARP_PANEL        EQU $7c
@@ -124,7 +124,7 @@ DEF COLL_DOWN_RIGHT_BUOY   EQU $c4 ; unused
 DEF COLL_DOWN_LEFT_BUOY    EQU $c5 ; unused
 DEF COLL_UP_RIGHT_BUOY     EQU $c6 ; unused
 DEF COLL_UP_LEFT_BUOY      EQU $c7 ; unused
-DEF COLL_FF                EQU $ff ; garbage
+DEF COLL_OUT_OF_BOUNDS     EQU $ff ; failsafe if the player gets where they shouldn't
 
 ; collision data type nybbles
 DEF LO_NYBBLE_GRASS      EQU $07

@@ -176,7 +176,6 @@ CheckIceTile::
 	ret
 
 CheckWhirlpoolTile::
-	nop
 	cp COLL_WHIRLPOOL
 	ret z
 	cp COLL_WHIRLPOOL_2C
@@ -193,8 +192,6 @@ CheckWaterfallTile::
 CheckStandingOnEntrance::
 	ld a, [wPlayerCollision]
 	cp COLL_DOOR
-	ret z
-	cp COLL_DOOR_79
 	ret z
 	cp COLL_STAIRCASE
 	ret z

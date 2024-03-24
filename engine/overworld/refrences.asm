@@ -109,12 +109,18 @@ ResolveCharblockLUT::
     rl d
     ld hl, sCharblockIDs
     add hl, de
+    ld a, [hl] ; save our old id so we know if we need derefrence it or not
     ld [hl], b
     inc hl
+    ld b, [hl] ; ab now holds our old id, if it's $FFFF we shouldn't derefrence it
     ld [hl], c
+    cp a, b
+    jr nz, .derefrence
+    inc a
+.derefrence
+    call nz, DerefrenceOldBlock
     rr d
-    rr e ; e now holds which slot this
-    call DerefrenceOldBlock
+    rr e ; e now holds which slot this block is in
 .setDirtyBit
     ld a, e
     and a, %00000111
@@ -189,6 +195,7 @@ ResolveCharblockLUT::
 
 DerefrenceOldBlock:: ; derefrence the tiles in block e
     push de ; de is the only register pair this function needs to save
+    
     ld a, BANK(sCharblockData) ; switch to the charblock data bank
     ld [MBC3SRamBank], a
     ldh a, [rSVBK] ; save our current WRAM bank
@@ -373,12 +380,11 @@ CopyCharblock::
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
     xor a
-    ld b, HIGH(CHARBLOCK_START_BANK) ; calculate the bank and address that holds the charblock
-REPT 6 ; log2(CHARBLOCK_SIZE)
+    REPT 6 ; log2(CHARBLOCK_SIZE)
     sla l
     rl h
     rla
-ENDR
+    ENDR
     sla h ; adjust for rom banks being only 1/4 of the address space
     rla
     sla h
@@ -386,8 +392,8 @@ ENDR
     scf ; sneaky way to set the sixth bit of h
     rr h
     srl h
-
-    ld c, LOW(CHARBLOCK_START_BANK)
+    
+    ld bc, CHARBLOCK_START_BANK
     add a, c
     ld c, a
     ld de, wDecompressedCharblockBuffer
@@ -453,17 +459,16 @@ ResolveCharblockTiles::
 .newLoop
     ld a, [hli]
     and a
-if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
+; if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
     jr z, .slotFound
     ld a, h
     cp a, HIGH(sTileRefrenceCounts) + 1
     jr nz, .newLoop
     ld b, b
     stop
-    nop
-else
-    jr nz, .newLoop ; if not, don't bother bounds checking
-endc
+; else
+;     jr nz, .newLoop ; if not, don't bother bounds checking
+; endc
 .slotFound
     dec hl
     ld a, h ; the low byte of hl is already adjusted, so we don't need to mess with it

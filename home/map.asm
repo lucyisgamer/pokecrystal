@@ -1368,52 +1368,83 @@ GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) a
 
 GetCoordTile:: ; make this handle the new layout
 ; Get the collision byte for tile d, e
+	push de
 	call GetBlockLocation
-	ld a, [hl]
-	and a
-	jr z, .nope
-	ld l, a
-	ld h, 0
-	add hl, hl
-	add hl, hl
-	ld a, [wTilesetCollisionAddress]
-	ld c, a
-	ld a, [wTilesetCollisionAddress + 1]
-	ld b, a
+	pop de
+	ld a, e
+	and a, $01
+	sla a
+	ld e, a
+	ld a, d
+	and a, $01
+	or a, e
+	add a, wDecompressedCharblockCollision - wDecompressedCharblockBuffer ; add the collision offset
+	ld e, a
+	ld d, $00
+	ld c, [hl]
+	call LookupBlockIndex
+	call GetBlockDataPointer
+	add hl, de ; point to our collision byte
+	
+	ld b, h
+	ld c, l
+	ld h, HIGH(CHARBLOCK_START_BANK)
+	jp GetReallyFarByte	
+
+LookupBlockIndex:: ; returns the block id in bc for block c in the id table
+	ld b, $00
+	sla c
+	rl b
+	ld hl, sCharblockIDs
 	add hl, bc
-	rr d
-	jr nc, .nocarry
-	inc hl
+	ld a, BANK(sCharblockIDs)
+	call OpenSRAM
+	ld b, [hl]
+	inc l ; each id is always 2-byte aligned, so we only need to increment the low byte
+	ld c, [hl]
+	jp CloseSRAM ; tail call optimization
 
-.nocarry
-	rr e
-	jr nc, .nocarry2
-	inc hl
-	inc hl
+GetBlockDataPointer:: ; returns a pointer to map block bc in a:hl
+	ld a, c
+	rrca
+	rrca
+	ld c, a
+	and a, %00111111
+	ld h, a
+	ld a, c
+	and a, %11000000 ; lower byte is done
+	ld l, a
 
-.nocarry2
-	ld a, [wTilesetCollisionBank]
-	call GetFarByte
-	ret
+	ld a, b
+	rrca
+	rrca
+	ld b, a
+	and a, %11000000
+	or a, h ; upper byte done
+	ld h, a
+	ld a, b
+	and a, %00111111
 
-.nope
-	ld a, -1
+    sla h ; adjust for rom banks being only 1/4 of the address space
+    rla
+    sla h
+    rla
+    scf ; sneaky way to set the sixth bit of h
+    rr h
+    srl h
+	add a, LOW(CHARBLOCK_START_BANK)
 	ret
 
 GetBlockLocation:: ; returns a pointer to the map block at tile location d, e in hl
-	srl d ; bit shifts for the win!
-	srl e
-
 	ld a, d
-	and a, $1F
+	and a, $3F
 	ld d, a
 	ld a, e
-	and a, $1F
+	and a, $3F
 	ld e, d ; swap d and e
 	ld d, a
 
 	sla e ; this is very clever, me likey
-	sla e
 	sla e
 
 	srl d ; pack d and e together
@@ -1588,6 +1619,7 @@ ExitAllMenus::
 	call UpdateSprites
 	call GSReloadPalettes
 FinishExitMenu::
+	farcall LoadMapPartsOnSpawn
 	ld b, SCGB_MAPPALS
 	call GetSGBLayout
 	farcall LoadOW_BGPal7
@@ -1635,6 +1667,7 @@ ReloadTilesetAndPalettes::
 	; call SwitchToAnyMapAttributesBank
 	farcall UpdateTimeOfDayPal
 	call OverworldTextModeSwitch
+	call MarkTilesForReload
 	;call LoadTilesetGFX
 	ld a, 9
 	call SkipMusic
@@ -1642,6 +1675,22 @@ ReloadTilesetAndPalettes::
 	rst Bankswitch
 
 	call EnableLCD
+	ret
+
+MarkTilesForReload::
+	ldh a, [rSVBK]
+	push af
+	ld a, BANK(wOutdatedTileFlags)
+	ldh [rSVBK], a ; switch to WRAM bank
+	ld a, $FF
+	ld c, wOutdatedTileFlagsEnd - wOutdatedTileFlags + 1
+	ld hl, wOutdatedTileFlags
+.loop
+	ld [hli], a
+	dec c
+	jr nz, .loop
+	pop af
+	ldh [rSVBK], a ; restore WRAM bank
 	ret
 
 GetMapEnvironment::
@@ -1655,9 +1704,6 @@ GetMapEnvironment::
 	pop bc
 	pop de
 	pop hl
-	ret
-
-Map_DummyFunction:: ; unreferenced
 	ret
 
 GetAnyMapEnvironment::
@@ -1797,3 +1843,5 @@ rept 16
 	nop
 endr
 	ret
+
+DEF CHARBLOCK_START_BANK EQU $105

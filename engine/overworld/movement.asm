@@ -668,7 +668,7 @@ NormalStep:
 	add hl, bc
 	ld [hl], OBJECT_ACTION_STEP
 
-	ld hl, OBJECT_TILE
+	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
 	call CheckSuperTallGrassTile
