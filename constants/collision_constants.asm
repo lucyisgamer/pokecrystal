@@ -1,22 +1,33 @@
-; collision permissions (see data/collision/collision_permissions.asm)
-DEF LAND_TILE  EQU $00
-DEF WATER_TILE EQU $01
-DEF WALL_TILE  EQU $0f
-DEF TALK       EQU $10
+DEF COLL_RIGHT     EQU %00000001
+DEF COLL_LEFT      EQU %00000010
+DEF COLL_UP        EQU %00000100
+DEF COLL_DOWN      EQU %00001000
+DEF LAND_NYBBLE    EQU $00
+DEF WATER_NYBBLE   EQU $10
+DEF LEDGE_NYBBLE   EQU $20 ; whatever side of a ledge is solid is the side you can jump over
+DEF GRASS_NYBBLE   EQU $30
 
-DEF COLL_UP EQU %00000001
-DEF COLL_RIGHT EQU %00000010
-DEF COLL_DOWN EQU %00000100
-DEF COLL_LEFT EQU %00001000
-DEF LAND_NYBBLE EQU $00
-DEF WATER_NYBBLE EQU $10
-DEF WARP_NYBBLE EQU $20
-DEF LEDGE_NYBBLE EQU $30
-DEF GRASS_NYBBLE EQU $40
+DEF WARP_NYBBLE    EQU $40 ; warps that cause the player to move a certain direction when they warp to it 
+DEF WARP_DOWN      EQU %00000000
+DEF WARP_UP        EQU %00000001
+DEF WARP_LEFT      EQU %00000010
+DEF WARP_RIGHT     EQU %00000011
+DEF WARP_CAVE      EQU %00000000
+DEF WARP_STAIRS    EQU %00000100
+DEF WARP_CARPET    EQU %00001000
+
+DEF CURRENT_NYBBLE EQU $80 ; tiles that make the player move a certain direction
+DEF CURR_DOWN      EQU %00000000
+DEF CURR_UP        EQU %00000001
+DEF CURR_LEFT      EQU %00000010
+DEF CURR_RIGHT     EQU %00000011
+DEF CURR_WATER     EQU %00000000
+DEF CURR_FALL      EQU %00000100
+DEF CURR_LAND      EQU %00001000
+DEF CURR_BIKE      EQU %00001100
 
 
 ; collision data types (see data/tilesets/*_collision.asm)
-; TileCollisionTable indexes (see data/collision/collision_permissions.asm)
 DEF COLL_FLOOR             EQU $00
 DEF COLL_01                EQU $01 ; garbage
 DEF COLL_03                EQU $03 ; garbage
@@ -24,21 +35,11 @@ DEF COLL_04                EQU $04 ; garbage
 DEF COLL_WALL              EQU $07
 DEF COLL_CUT_08            EQU $08 ; unused
 DEF COLL_TALL_GRASS_10     EQU $10 ; unused
-DEF COLL_CUT_TREE          EQU $12
-DEF COLL_LONG_GRASS        EQU $14
-DEF COLL_HEADBUTT_TREE     EQU $15
 DEF COLL_TALL_GRASS        EQU $18
-DEF COLL_CUT_TREE_1A       EQU $1a ; unused
-DEF COLL_LONG_GRASS_1C     EQU $1c ; unused
-DEF COLL_HEADBUTT_TREE_1D  EQU $1d ; unused
 DEF COLL_WATER_21          EQU $21 ; unused
-DEF COLL_ICE               EQU $23
-DEF COLL_WHIRLPOOL         EQU $24
 DEF COLL_BUOY              EQU $27
 DEF COLL_CUT_28            EQU $28 ; garbage
 DEF COLL_WATER             EQU $29
-DEF COLL_ICE_2B            EQU $2b ; unused
-DEF COLL_WHIRLPOOL_2C      EQU $2c ; unused
 DEF COLL_WATERFALL_RIGHT   EQU $30 ; unused
 DEF COLL_WATERFALL_LEFT    EQU $31 ; unused
 DEF COLL_WATERFALL_UP      EQU $32 ; unused
@@ -69,14 +70,10 @@ DEF COLL_BRAKE_55          EQU $55 ; unused
 DEF COLL_BRAKE_56          EQU $56 ; unused
 DEF COLL_BRAKE_57          EQU $57 ; unused
 DEF COLL_5B                EQU $5b ; garbage
-DEF COLL_PIT               EQU $60
 DEF COLL_VIRTUAL_BOY       EQU $61 ; garbage
 DEF COLL_64                EQU $64 ; garbage
 DEF COLL_65                EQU $65 ; garbage
-DEF COLL_PIT_68            EQU $68 ; unused
 DEF COLL_WARP_CARPET_DOWN  EQU $70
-DEF COLL_DOOR              EQU $71
-DEF COLL_LADDER            EQU $72
 DEF COLL_STAIRCASE_73      EQU $73 ; unused
 DEF COLL_CAVE_74           EQU $74 ; unused
 DEF COLL_DOOR_75           EQU $75 ; unused
@@ -89,6 +86,20 @@ DEF COLL_WARP_PANEL        EQU $7c
 DEF COLL_DOOR_7D           EQU $7d ; unused
 DEF COLL_WARP_CARPET_RIGHT EQU $7e
 DEF COLL_WARP_7F           EQU $7f ; unused
+
+DEF COLL_WHIRLPOOL         EQU $90
+DEF COLL_LONG_GRASS        EQU $91
+DEF COLL_ICE               EQU $92
+DEF COLL_PIT               EQU $93
+DEF COLL_DOOR              EQU $94
+DEF COLL_LADDER            EQU $95
+
+DEF COLL_CUT_TREE          EQU $B0
+DEF COLL_HEADBUTT_TREE     EQU $B1
+
+
+
+
 DEF COLL_COUNTER           EQU $90
 DEF COLL_BOOKSHELF         EQU $91
 DEF COLL_PC                EQU $93
@@ -124,16 +135,17 @@ DEF COLL_DOWN_RIGHT_BUOY   EQU $c4 ; unused
 DEF COLL_DOWN_LEFT_BUOY    EQU $c5 ; unused
 DEF COLL_UP_RIGHT_BUOY     EQU $c6 ; unused
 DEF COLL_UP_LEFT_BUOY      EQU $c7 ; unused
-DEF COLL_OUT_OF_BOUNDS     EQU $ff ; failsafe if the player gets where they shouldn't
+DEF COLL_EDGE_OF_WORLD     EQU $fe ; barrier to stop player from escaping the confines of this world
+DEF COLL_OUT_OF_BOUNDS     EQU $ff ; failsafe if the player gets where they should never, ever be
 
-; collision data type nybbles
-DEF LO_NYBBLE_GRASS      EQU $07
-DEF HI_NYBBLE_TALL_GRASS EQU $10
-DEF HI_NYBBLE_WATER      EQU $20
-DEF HI_NYBBLE_CURRENT    EQU $30
-DEF HI_NYBBLE_WALK       EQU $40
-DEF HI_NYBBLE_WALK_ALT   EQU $50
-DEF HI_NYBBLE_WARPS      EQU $70
-DEF HI_NYBBLE_LEDGES     EQU $a0
-DEF HI_NYBBLE_SIDE_WALLS EQU $b0
-DEF HI_NYBBLE_SIDE_BUOYS EQU $c0
+; ; collision data type nybbles
+; DEF LO_NYBBLE_GRASS      EQU $07
+; DEF HI_NYBBLE_TALL_GRASS EQU $10
+; DEF HI_NYBBLE_WATER      EQU $20
+; DEF HI_NYBBLE_CURRENT    EQU $30
+; DEF HI_NYBBLE_WALK       EQU $40
+; DEF HI_NYBBLE_WALK_ALT   EQU $50
+; DEF HI_NYBBLE_WARPS      EQU $70
+; DEF HI_NYBBLE_LEDGES     EQU $a0
+; DEF HI_NYBBLE_SIDE_WALLS EQU $b0
+; DEF HI_NYBBLE_SIDE_BUOYS EQU $c0

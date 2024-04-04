@@ -1,38 +1,37 @@
-CheckGrassCollision::
+CheckGrassCollision:: ; set carry if player is touching grass collision
 	ld a, [wPlayerCollision]
-	ld hl, .blocks
-	ld de, 1
-	call IsInArray
+	cp a, COLL_LONG_GRASS
+	ccf
+	ret z ; branchless programming
+	and a, $F0 ; we now just check for regular grass and water
+	cp a, GRASS_NYBBLE
+	ccf
+	ret z
+	cp a, WATER_NYBBLE
+	ccf
+	ret z
+	and a
 	ret
-
-.blocks
-	db COLL_CUT_08
-	db COLL_TALL_GRASS
-	db COLL_LONG_GRASS
-	db COLL_CUT_28
-	db COLL_WATER
-	db COLL_GRASS_48
-	db COLL_GRASS_49
-	db COLL_GRASS_4A
-	db COLL_GRASS_4B
-	db COLL_GRASS_4C
-	db -1
 
 CheckCutCollision:
 	ld a, c
-	ld hl, .blocks
-	ld de, 1
-	call IsInArray
+	cp a, COLL_LONG_GRASS
+	ccf
+	ret z
+	cp a, COLL_CUT_TREE
+	ccf
+	ret z
+	and a, $F0
+	cp a, GRASS_NYBBLE
+	ccf
+	ret z
+	and a
 	ret
 
 .blocks
 	db COLL_CUT_TREE
-	db COLL_CUT_TREE_1A
-	db COLL_TALL_GRASS_10
 	db COLL_TALL_GRASS
 	db COLL_LONG_GRASS
-	db COLL_LONG_GRASS_1C
-	db -1
 
 GetWarpSFX::
 	ld a, [wPlayerCollision]

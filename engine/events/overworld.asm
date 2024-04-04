@@ -356,10 +356,11 @@ SurfFunction:
 	cp PLAYER_SURF_PIKA
 	jr z, .alreadyfail
 	call GetFacingTileCoord
-	call GetTileCollision
-	cp WATER_TILE
+	ld d, a ; save our collision value for later
+	and a, $F0
+	cp a, WATER_NYBBLE ; check if we're on water
 	jr nz, .cannotsurf
-	call CheckDirection
+	call CheckDirection ; use that collision value we saved to check directions
 	jr c, .cannotsurf
 	farcall CheckFacingObject
 	jr c, .cannotsurf
@@ -454,12 +455,12 @@ CheckDirection:
 	rrca
 	rrca
 	ld e, a
+	ld a, d
 	ld d, 0
 	ld hl, .Directions
 	add hl, de
 
 ; Can you walk in this direction?
-	ld a, [wTilePermissions]
 	and [hl]
 	jr nz, .quit
 	xor a
@@ -487,12 +488,13 @@ TrySurfOW::
 	jr z, .quit
 
 ; Must be facing water.
-	ld a, [wFacingTileID]
-	call GetTileCollision
-	cp WATER_TILE
+	call GetFacingTileCoord
+	ld d, a
+	and a, $F0
+	cp a, WATER_NYBBLE
 	jr nz, .quit
-
-; Check tile permissions.
+	
+	; Check tile permissions.
 	call CheckDirection
 	jr c, .quit
 
@@ -958,12 +960,6 @@ StrengthFunction:
 	call CheckBadge
 	jr c, .Failed
 	jr .UseStrength
-
-.AlreadyUsingStrength: ; unreferenced
-	ld hl, .AlreadyUsingStrengthText
-	call MenuTextboxBackup
-	ld a, $80
-	ret
 
 .AlreadyUsingStrengthText:
 	text_far _AlreadyUsingStrengthText
@@ -1442,8 +1438,8 @@ FishFunction:
 	cp PLAYER_SURF_PIKA
 	jr z, .fail
 	call GetFacingTileCoord
-	call GetTileCollision
-	cp WATER_TILE
+	and a, $F0
+	cp a, WATER_NYBBLE
 	jr z, .facingwater
 .fail
 	ld a, $3
@@ -1606,10 +1602,6 @@ RodNothingText:
 	text_far _RodNothingText
 	text_end
 
-UnusedNothingHereText: ; unreferenced
-	text_far _UnusedNothingHereText
-	text_end
-
 BikeFunction:
 	call .TryBike
 	and $7f
@@ -1686,9 +1678,14 @@ BikeFunction:
 	jr .nope
 
 .ok
-	call GetPlayerTile
-	and $f ; lo nybble only
+	ld a, [wPlayerCollision]
+	and $F0 ; lo nybble only
+	cp a, LAND_NYBBLE
 	jr nz, .nope ; not FLOOR_TILE
+	cp a, $C0
+	jr nc, .nope
+	cp a, $80
+	jr c, .nope
 	xor a
 	ret
 

@@ -77,9 +77,8 @@ WillObjectBumpIntoWater:
 	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
-	ld d, a
-	call GetTileCollision
-	and a ; LAND_TILE
+	and a, $F0
+	cp a, LAND_NYBBLE
 	jr z, WillObjectBumpIntoTile
 	scf
 	ret
@@ -90,8 +89,8 @@ WillObjectBumpIntoLand:
 	ld hl, OBJECT_COLL
 	add hl, bc
 	ld a, [hl]
-	call GetTileCollision
-	cp WATER_TILE
+	and $F0
+	cp WATER_NYBBLE
 	jr z, WillObjectBumpIntoTile
 	scf
 	ret
@@ -99,19 +98,17 @@ WillObjectBumpIntoLand:
 WillObjectBumpIntoTile:
 	ld hl, OBJECT_COLL
 	add hl, bc
-	ld a, [hl]
-	call GetSideWallDirectionMask
-	ret nc
-	push af
+	ld d, [hl] ; save our collision byte in d
+
 	ld hl, OBJECT_WALKING
 	add hl, bc
 	ld a, [hl]
 	maskbits NUM_DIRECTIONS
 	ld e, a
+	ld a, d
 	ld d, 0
 	ld hl, .dir_masks
 	add hl, de
-	pop af
 	and [hl]
 	ret z
 	scf
@@ -126,18 +123,15 @@ WillObjectBumpIntoTile:
 CanObjectLeaveTile:
 	ld hl, OBJECT_LAST_COLL
 	add hl, bc
-	ld a, [hl]
-	call GetSideWallDirectionMask
-	ret nc
-	push af
+	ld d, [hl]
 	ld hl, OBJECT_WALKING
 	add hl, bc
 	maskbits NUM_DIRECTIONS
 	ld e, a
+	ld a, d
 	ld d, 0
 	ld hl, .dir_masks
 	add hl, de
-	pop af
 	and [hl]
 	ret z
 	scf
@@ -148,37 +142,6 @@ CanObjectLeaveTile:
 	db DOWN_MASK  ; UP
 	db LEFT_MASK  ; LEFT
 	db RIGHT_MASK ; RIGHT
-
-GetSideWallDirectionMask:
-	ld d, a
-	and $f0
-	cp HI_NYBBLE_SIDE_WALLS
-	jr z, .continue
-	cp HI_NYBBLE_SIDE_BUOYS
-	jr z, .continue
-	xor a
-	ret
-
-.continue
-	ld a, d
-	and $7
-	ld e, a
-	ld d, 0
-	ld hl, .side_wall_masks
-	add hl, de
-	ld a, [hl]
-	scf
-	ret
-
-.side_wall_masks
-	db RIGHT_MASK             ; COLL_RIGHT_WALL/BUOY
-	db LEFT_MASK              ; COLL_LEFT_WALL/BUOY
-	db DOWN_MASK              ; COLL_UP_WALL/BUOY
-	db UP_MASK                ; COLL_DOWN_WALL/BUOY
-	db UP_MASK | RIGHT_MASK   ; COLL_DOWN_RIGHT_WALL/BUOY
-	db UP_MASK | LEFT_MASK    ; COLL_DOWN_LEFT_WALL/BUOY
-	db DOWN_MASK | RIGHT_MASK ; COLL_UP_RIGHT_WALL/BUOY
-	db DOWN_MASK | LEFT_MASK  ; COLL_UP_LEFT_WALL/BUOY
 
 WillObjectRemainOnWater:
 	ld hl, OBJECT_WALKING
@@ -215,13 +178,13 @@ WillObjectRemainOnWater:
 
 .continue
 	call GetCoordTile
-	call GetTileCollision
 	pop de
-	and a ; LAND_TILE
+	and a, $F0
+	cp a, LAND_NYBBLE
 	jr nz, .not_land
 	call GetCoordTile
-	call GetTileCollision
-	and a ; LAND_TILE
+	and a, $F0
+	cp a, LAND_NYBBLE
 	jr nz, .not_land
 	xor a
 	ret
@@ -602,3 +565,6 @@ WillObjectIntersectBigObject: ; stubbed for now. Can rewrite later if needed
 .nope
 	and a
 	ret*/
+
+
+	

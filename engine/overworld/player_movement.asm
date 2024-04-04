@@ -119,14 +119,10 @@ DoPlayerMovement::
 	ret
 
 .not_whirlpool
-	and $f0
-	cp HI_NYBBLE_CURRENT
+	and $F0
+	cp CURRENT_NYBBLE
 	jr z, .water
-	cp HI_NYBBLE_WALK
-	jr z, .land1
-	cp HI_NYBBLE_WALK_ALT
-	jr z, .land2
-	cp HI_NYBBLE_WARPS
+	cp WARP_NYBBLE
 	jr z, .warps
 	jr .no_walk
 
@@ -147,75 +143,29 @@ DoPlayerMovement::
 	db UP    ; COLL_WATERFALL_UP
 	db DOWN  ; COLL_WATERFALL
 
-.land1
-	ld a, c
-	and 7
-	ld c, a
-	ld b, 0
-	ld hl, .land1_table
-	add hl, bc
-	ld a, [hl]
-	cp STANDING
-	jr z, .no_walk
-	ld [wWalkingDirection], a
-	jr .continue_walk
-
-.land1_table
-	db STANDING ; COLL_BRAKE
-	db RIGHT    ; COLL_WALK_RIGHT
-	db LEFT     ; COLL_WALK_LEFT
-	db UP       ; COLL_WALK_UP
-	db DOWN     ; COLL_WALK_DOWN
-	db STANDING ; COLL_BRAKE_45
-	db STANDING ; COLL_BRAKE_46
-	db STANDING ; COLL_BRAKE_47
-
-.land2
-	ld a, c
-	and 7
-	ld c, a
-	ld b, 0
-	ld hl, .land2_table
-	add hl, bc
-	ld a, [hl]
-	cp STANDING
-	jr z, .no_walk
-	ld [wWalkingDirection], a
-	jr .continue_walk
-
-.land2_table
-	db RIGHT    ; COLL_WALK_RIGHT_ALT
-	db LEFT     ; COLL_WALK_LEFT_ALT
-	db UP       ; COLL_WALK_UP_ALT
-	db DOWN     ; COLL_WALK_DOWN_ALT
-	db STANDING ; COLL_BRAKE_ALT
-	db STANDING ; COLL_BRAKE_55
-	db STANDING ; COLL_BRAKE_56
-	db STANDING ; COLL_BRAKE_57
-
 .warps
 	ld a, c
+	cp COLL_LADDER
+	jr z, .no_walk
+	cp COLL_PIT
+	jr z, .no_walk
 	cp COLL_DOOR
-	jr z, .down
-	cp COLL_STAIRCASE
-	jr z, .down
-	cp COLL_CAVE
-	jr nz, .no_walk
+	jr nz, .fancy_walk
 
 .down
 	ld a, DOWN
+.fancy_walk
+	and a, $03
 	ld [wWalkingDirection], a
-	jr .continue_walk
-
-.no_walk
-	xor a
-	ret
-
 .continue_walk
 	ld a, STEP_WALK
 	call .DoStep
 	ld a, PLAYERMOVEMENT_CONTINUE
 	scf
+	ret
+	
+.no_walk
+	xor a
 	ret
 
 .CheckTurning:
@@ -343,20 +293,19 @@ DoPlayerMovement::
 
 .TryJump:
 	ld a, [wPlayerCollision]
-	ld e, a
+	ld d, a
 	and $f0
-	cp HI_NYBBLE_LEDGES
+	cp LEDGE_NYBBLE
 	jr nz, .DontJump
 
-	ld a, e
-	and 7
-	ld e, a
-	ld d, 0
-	ld hl, .ledge_table
-	add hl, de
 	ld a, [wFacingDirection]
-	and [hl]
-	jr z, .DontJump
+	ld e, a
+	ld a, d ; get our collision again
+	ld d, 0
+	ld hl, dir_masks
+	add hl, de
+	and a, [hl] ; if the block isn't solid in the direction we're jumping then we shouldn't jump
+	ret z ; a = 0 signals failure, which conveniently is what a bad and will do
 
 	ld de, SFX_JUMP_OVER_LEDGE
 	call PlaySFX
@@ -369,16 +318,6 @@ DoPlayerMovement::
 .DontJump:
 	xor a
 	ret
-
-.ledge_table
-	db FACE_RIGHT             ; COLL_HOP_RIGHT
-	db FACE_LEFT              ; COLL_HOP_LEFT
-	db FACE_UP                ; COLL_HOP_UP
-	db FACE_DOWN              ; COLL_HOP_DOWN
-	db FACE_RIGHT | FACE_DOWN ; COLL_HOP_DOWN_RIGHT
-	db FACE_DOWN | FACE_LEFT  ; COLL_HOP_DOWN_LEFT
-	db FACE_UP | FACE_RIGHT   ; COLL_HOP_UP_RIGHT
-	db FACE_UP | FACE_LEFT    ; COLL_HOP_UP_LEFT
 
 .DoStep:
 	ld e, a
@@ -574,7 +513,7 @@ ENDM
 	ld de, wTempCoordinateBuffer + 3 ; point to the end of the coordinate buffer
 ; Load the next Y coordinate into e
 	ld a, [wWalkingY]
-	call GetStepVectorSign
+	call .GetStepVectorSign
 	ld a, [wYCoord]
 	ld h, a
 	ld a, [wYCoord + 1]
@@ -588,7 +527,7 @@ ENDM
 	dec de
 ; Compute the next X coord
 	ld a, [wWalkingX]
-	call GetStepVectorSign
+	call .GetStepVectorSign
 	ld a, [wXCoord]
 	ld h, a
 	ld a, [wXCoord + 1]
@@ -621,6 +560,14 @@ ENDM
 .no_bump
 	ld a, 2
 	ret
+
+.GetStepVectorSign
+	add a
+	ret z  ; 0 or 128 (-128)
+	ld bc, 1
+	ret nc ; +1 to +127
+	ld bc, -1
+	ret    ; -127 to -1
 
 .CheckStrengthBoulder:
 	ld hl, wBikeFlags
@@ -660,16 +607,24 @@ ENDM
 
 .CheckLandPerms: ; Return 0 if walking onto land and tile permissions allow it. Otherwise, return carry.
 
-	ld a, [wTilePermissions]
+	ld a, [wWalkingCollision]
+	cp a, $BF
+	ccf
+	ret c ; collision bytes over $BF are not walkable
+	cp a, $7F
+	jr nc, .walkable ; collisions between $80-$BF are walkable
+	; we now have to check wall flags
 	ld d, a
 	ld a, [wFacingDirection]
-	and d
+	ld e, a
+	ld a, d
+	ld d, $00
+	ld hl, dir_masks
+	add hl, de
+	and a, [hl]
 	jr nz, .NotWalkable
 
-	ld a, [wWalkingCollision]
-	call .CheckWalkable
-	jr c, .NotWalkable
-
+.walkable
 	xor a
 	ret
 
@@ -684,34 +639,50 @@ ENDM
 	cp PLAYER_SKATE
 	ret
 
-.CheckWalkable: ; Return 0 if tile a is land. Otherwise, return carry.
+.CheckSurfPerms: ; Return 0 if moving in water, or 1 if moving onto land. Otherwise, return carry.
+	ld a, [wWalkingCollision]
+	call .CheckSurfable ; if the tile isn't passable to begin with just return carry
+	ret c
 
-	call GetTileCollision
-	and a ; LAND_TILE
-	ret z
-	; scf
+	ld d, a ; otherwise, we have to start checking directions
+	ld a, [wFacingDirection]
+	ld e, a
+	ld a, d ; stash our original result into a
+	ld d, $00
+	ld hl, dir_masks
+	add hl, de
+
+	ld d, a ; stash it away again into d
+	ld a, [wWalkingCollision]
+	cp a, $7F
+	jr c, .passable ; check for always pass tiles
+	and a, [hl]
+	ccf
+	ld a, d ; restore our result type from d (doesn't touch the flags at all)
+	ret nz ; the tile is solid from that direction, return a carry
+
+.passable
+	ld a, d
+	and a
 	ret
 
-.CheckSurfPerms: ; Return 0 if moving in water, or 1 if moving onto land. Otherwise, return carry.
+.CheckSurfable: ; Return 0 if collision a is water, or 1 if land. Otherwise, return carry.
 
-	ld a, [wTilePermissions]
-	ld d, a
-	ld a, [wFacingDirection]
-	and a, d
-	scf
-	ret nz ; not surfable
+	cp a, $BF
+	jr c, .Neither
+	cp a, $7F
+	jr c, .Land
 
-	ld a, [wWalkingCollision] ; fallthrough to CheckSurfable
-
-.CheckSurfable: ; Return 0 if tile a is water, or 1 if land. Otherwise, return carry.
-
-	call GetTileCollision
-	cp WATER_TILE
+	and a, $F0
+	cp a, WATER_NYBBLE
 	jr z, .Water
 
 ; Can walk back onto land from water.
-	and a ; LAND_TILE
+	cp a, LAND_NYBBLE
 	jr z, .Land
+	cp a, GRASS_NYBBLE
+	jr z, .Land
+
 
 	jr .Neither
 
@@ -774,3 +745,10 @@ StopPlayerForEvent::
 	ld a, 0
 	ld [wPlayerTurningDirection], a
 	ret
+
+
+dir_masks:
+	db DOWN_MASK  ; DOWN
+	db UP_MASK    ; UP
+	db RIGHT_MASK ; LEFT
+	db LEFT_MASK  ; RIGHT

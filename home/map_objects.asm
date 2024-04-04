@@ -71,106 +71,61 @@ DoesSpriteHaveFacings::
 	pop de
 	ret
 
-GetPlayerTile::
-	ld a, [wPlayerCollision]
-	call GetTileCollision
-	ld b, a
-	ret
-
 CheckOnWater::
 	ld a, [wPlayerCollision]
-	call GetTileCollision
-	sub WATER_TILE
+	cp a, COLL_WHIRLPOOL
 	ret z
-	and a
-	ret
-
-GetTileCollision::
-; Get the collision type of tile a.
-
-	; push de
-	; push hl
-
-	; ld hl, TileCollisionTable
-	; ld e, a
-	; ld d, 0
-	; add hl, de
-
-	; ldh a, [hROMBank]
-	; push af
-	; ld a, BANK(TileCollisionTable)
-	; rst Bankswitch
-	; ld e, [hl]
-	; pop af
-	; rst Bankswitch
-
-	; ld a, e
-	; and $f ; lo nybble only
-
-	; pop hl
-	; pop de
+	and a, $F0
+	cp a, WATER_NYBBLE
+	ret z
+	cp a, CURRENT_NYBBLE
+	ret nz
+	ld a, [wPlayerCollision]
+	and a, %00001100
+	cp a, CURR_FALL
 	ret
 
 CheckGrassTile::
 	scf
-	ret ; bypass this for now
+	ret ; TODO - bypass this for now
 	ld d, a
 	and $f0
-	cp HI_NYBBLE_TALL_GRASS
+	cp GRASS_NYBBLE
 	jr z, .grass
-	cp HI_NYBBLE_WATER
-	jr z, .water
+	cp WATER_NYBBLE
+	jr z, .grass
 	scf
 	ret
 
 .grass
 	ld a, d
-	and LO_NYBBLE_GRASS
-	ret z
-	scf
-	ret
-; For some reason, the above code is duplicated down here.
-.water
-	ld a, d
-	and LO_NYBBLE_GRASS
+	and a, GRASS_NYBBLE
 	ret z
 	scf
 	ret
 
 CheckSuperTallGrassTile::
 	cp COLL_LONG_GRASS
-	ret z
-	cp COLL_LONG_GRASS_1C
 	ret
 
 CheckCutTreeTile::
 	cp COLL_CUT_TREE
-	ret z
-	cp COLL_CUT_TREE_1A
 	ret
 
 CheckHeadbuttTreeTile::
 	cp COLL_HEADBUTT_TREE
-	ret z
-	cp COLL_HEADBUTT_TREE_1D
 	ret
 
 CheckCounterTile::
 	cp COLL_COUNTER
-	ret z
-	cp COLL_COUNTER_98
 	ret
 
 CheckPitTile::
 	cp COLL_PIT
-	ret z
-	cp COLL_PIT_68
 	ret
 
 CheckIceTile::
 	cp COLL_ICE
-	ret z
-	cp COLL_ICE_2B
 	ret z
 	scf
 	ret
@@ -178,24 +133,32 @@ CheckIceTile::
 CheckWhirlpoolTile::
 	cp COLL_WHIRLPOOL
 	ret z
-	cp COLL_WHIRLPOOL_2C
-	ret z
 	scf
 	ret
 
 CheckWaterfallTile::
-	cp COLL_WATERFALL
+	push af
+	and a, $F0
+	cp a, CURRENT_NYBBLE
+	jr nz, .fail
+	pop af
+	and a, %00001100
+	cp a, CURR_FALL
 	ret z
-	cp COLL_CURRENT_DOWN
+	scf
+	ret
+
+.fail
+	pop af
+	scf
 	ret
 
 CheckStandingOnEntrance::
 	ld a, [wPlayerCollision]
-	cp COLL_DOOR
+	and a, $F0
+	cp a, WARP_NYBBLE
 	ret z
-	cp COLL_STAIRCASE
-	ret z
-	cp COLL_CAVE
+	scf
 	ret
 
 GetTopLeftScreenCoords:: ; Returns the 16 bit x and y coords of the top left corner of the screen in bc and de respectively. Preserves a and hl

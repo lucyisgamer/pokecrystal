@@ -1161,8 +1161,6 @@ SaveScreen_LoadConnection::
 	ret
 
 GetMovementPermissions::
-	xor a
-	ld [wTilePermissions], a
 	; call .LeftRight
 	; call .UpDown
 ; get coords of current tile
@@ -1174,22 +1172,23 @@ GetMovementPermissions::
 	ld e, a
 	call GetCoordTile
 	ld [wPlayerCollision], a
-	call .CheckHiNybble
-	ret nz
-
-	ld a, [wPlayerCollision]
-	and 7
-	ld hl, .MovementPermissionsData
-	add l
-	ld l, a
-	ld a, 0
-	adc h
-	ld h, a
-	ld a, [hl]
-	ld hl, wTilePermissions
-	or [hl]
-	ld [hl], a
 	ret
+	; call .CheckHiNybble
+	; ret nz
+
+	; ld a, [wPlayerCollision]
+	; and 7
+	; ld hl, .MovementPermissionsData
+	; add l
+	; ld l, a
+	; ld a, 0
+	; adc h
+	; ld h, a
+	; ld a, [hl]
+	; ld hl, wTilePermissions
+	; or [hl]
+	; ld [hl], a
+	; ret
 
 .MovementPermissionsData:
 	db DOWN_MASK
@@ -1213,13 +1212,13 @@ GetMovementPermissions::
 	inc e
 	call GetCoordTile
 	ld [wCollisionDown], a
-	call .Down
+	; call .Down
 
 	pop de
 	dec e
 	call GetCoordTile
 	ld [wCollisionUp], a
-	call .Up
+	; call .Up
 	ret
 
 .LeftRight:
@@ -1232,95 +1231,95 @@ GetMovementPermissions::
 	dec d
 	call GetCoordTile
 	ld [wCollisionLeft], a
-	call .Left
+	; call .Left
 
 	pop de
 	inc d
 	call GetCoordTile
 	ld [wCollisionRight], a
-	call .Right
+	; call .Right
 	ret
 
-.Down:
-	call .CheckHiNybble
-	ret nz
-	ld a, [wCollisionDown]
-	and %111
-	cp COLL_UP_WALL & %111 ; COLL_UP_BUOY & %111
-	jr z, .ok_down
-	cp COLL_UP_RIGHT_WALL & %111 ; COLL_UP_RIGHT_BUOY & %111
-	jr z, .ok_down
-	cp COLL_UP_LEFT_WALL & %111 ; COLL_UP_LEFT_BUOY & %111
-	ret nz
+; .Down:
+; 	call .CheckHiNybble
+; 	ret nz
+; 	ld a, [wCollisionDown]
+; 	and %111
+; 	cp COLL_UP_WALL & %111 ; COLL_UP_BUOY & %111
+; 	jr z, .ok_down
+; 	cp COLL_UP_RIGHT_WALL & %111 ; COLL_UP_RIGHT_BUOY & %111
+; 	jr z, .ok_down
+; 	cp COLL_UP_LEFT_WALL & %111 ; COLL_UP_LEFT_BUOY & %111
+; 	ret nz
 
-.ok_down
-	ld a, [wTilePermissions]
-	or FACE_DOWN
-	ld [wTilePermissions], a
-	ret
+; .ok_down
+; 	ld a, [wTilePermissions]
+; 	or FACE_DOWN
+; 	ld [wTilePermissions], a
+; 	ret
 
-.Up:
-	call .CheckHiNybble
-	ret nz
-	ld a, [wCollisionUp]
-	and %111
-	cp COLL_DOWN_WALL & %111 ; COLL_DOWN_BUOY & %111
-	jr z, .ok_up
-	cp COLL_DOWN_RIGHT_WALL & %111 ; COLL_DOWN_RIGHT_BUOY & %111
-	jr z, .ok_up
-	cp COLL_DOWN_LEFT_WALL & %111 ; COLL_DOWN_LEFT_BUOY & %111
-	ret nz
+; .Up:
+; 	call .CheckHiNybble
+; 	ret nz
+; 	ld a, [wCollisionUp]
+; 	and %111
+; 	cp COLL_DOWN_WALL & %111 ; COLL_DOWN_BUOY & %111
+; 	jr z, .ok_up
+; 	cp COLL_DOWN_RIGHT_WALL & %111 ; COLL_DOWN_RIGHT_BUOY & %111
+; 	jr z, .ok_up
+; 	cp COLL_DOWN_LEFT_WALL & %111 ; COLL_DOWN_LEFT_BUOY & %111
+; 	ret nz
 
-.ok_up
-	ld a, [wTilePermissions]
-	or FACE_UP
-	ld [wTilePermissions], a
-	ret
+; .ok_up
+; 	ld a, [wTilePermissions]
+; 	or FACE_UP
+; 	ld [wTilePermissions], a
+; 	ret
 
-.Right:
-	call .CheckHiNybble
-	ret nz
-	ld a, [wCollisionRight]
-	and %111
-	cp COLL_LEFT_WALL & %111 ; COLL_LEFT_BUOY & %111
-	jr z, .ok_right
-	cp COLL_DOWN_LEFT_WALL & %111 ; COLL_DOWN_LEFT_BUOY & %111
-	jr z, .ok_right
-	cp COLL_UP_LEFT_WALL & %111 ; COLL_UP_LEFT_BUOY & %111
-	ret nz
+; .Right:
+; 	call .CheckHiNybble
+; 	ret nz
+; 	ld a, [wCollisionRight]
+; 	and %111
+; 	cp COLL_LEFT_WALL & %111 ; COLL_LEFT_BUOY & %111
+; 	jr z, .ok_right
+; 	cp COLL_DOWN_LEFT_WALL & %111 ; COLL_DOWN_LEFT_BUOY & %111
+; 	jr z, .ok_right
+; 	cp COLL_UP_LEFT_WALL & %111 ; COLL_UP_LEFT_BUOY & %111
+; 	ret nz
 
-.ok_right
-	ld a, [wTilePermissions]
-	or FACE_RIGHT
-	ld [wTilePermissions], a
-	ret
+; .ok_right
+; 	ld a, [wTilePermissions]
+; 	or FACE_RIGHT
+; 	ld [wTilePermissions], a
+; 	ret
 
-.Left:
-	call .CheckHiNybble
-	ret nz
-	ld a, [wCollisionLeft]
-	and %111
-	cp COLL_RIGHT_WALL & %111 ; COLL_RIGHT_BUOY & %111
-	jr z, .ok_left
-	cp COLL_DOWN_RIGHT_WALL & %111 ; COLL_DOWN_RIGHT_BUOY & %111
-	jr z, .ok_left
-	cp COLL_UP_RIGHT_WALL & %111 ; COLL_UP_RIGHT_BUOY & %111
-	ret nz
+; .Left:
+; 	call .CheckHiNybble
+; 	ret nz
+; 	ld a, [wCollisionLeft]
+; 	and %111
+; 	cp COLL_RIGHT_WALL & %111 ; COLL_RIGHT_BUOY & %111
+; 	jr z, .ok_left
+; 	cp COLL_DOWN_RIGHT_WALL & %111 ; COLL_DOWN_RIGHT_BUOY & %111
+; 	jr z, .ok_left
+; 	cp COLL_UP_RIGHT_WALL & %111 ; COLL_UP_RIGHT_BUOY & %111
+; 	ret nz
 
-.ok_left
-	ld a, [wTilePermissions]
-	or FACE_LEFT
-	ld [wTilePermissions], a
-	ret
+; .ok_left
+; 	ld a, [wTilePermissions]
+; 	or FACE_LEFT
+; 	ld [wTilePermissions], a
+; 	ret
 
-.CheckHiNybble:
-	and $f0
-	cp HI_NYBBLE_SIDE_WALLS
-	ret z
-	cp HI_NYBBLE_SIDE_BUOYS
-	ret
+; .CheckHiNybble:
+; 	and $f0
+; 	cp HI_NYBBLE_SIDE_WALLS
+; 	ret z
+; 	cp HI_NYBBLE_SIDE_BUOYS
+; 	ret
 
-GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) and tile id in a of the tile the player is facing.
+GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) and collision byte in a of the tile the player is facing.
 
 	ld a, [wPlayerDirection]
 	and %1100
@@ -1352,7 +1351,9 @@ GetFacingTileCoord:: ; Return coordinates within wOverworldMapBlocks in (d, e) a
 	add e
 	and a, $3F
 	ld e, a
-	ld a, [hl]
+	push de
+	call GetCoordTile
+	pop de
 	ret
 
 .Directions:
@@ -1677,7 +1678,7 @@ ReloadTilesetAndPalettes::
 	call EnableLCD
 	ret
 
-MarkTilesForReload::
+MarkTilesForReload:: ; marks all overworld tiles as being dirty. TileDMA takes care of actually reloading the tiles
 	ldh a, [rSVBK]
 	push af
 	ld a, BANK(wOutdatedTileFlags)
