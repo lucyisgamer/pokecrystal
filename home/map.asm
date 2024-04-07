@@ -195,31 +195,43 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 	ld e, a
 	ld a, [wBlockY]
 	ld d, a
-	srl d 		   ; this is evil bit hacking, but it's much more efficient than actually multiplying
-	jr nc, .shift1 ; this shit only works becuase wOverworldMapBlocks is square and has power of 2 dimensions
-	set $05, e     ; this makes me cry on the inside. Too bad!
-.shift1:
-	srl d
-	jr nc, .shift2
-	set $06, e
 
-.shift2:
-	srl d
-	jr nc, .shift3
-	set $07, e
-.shift3: ; de should now have our offset within wOverworldMapBlocks
+	rrc d
+	rrc d
+	rrc d
+	ld a, d
+	and a, %11100000
+	or a, e
+	ld e, a
+	ld a, d
+	and a, %00011111
+	ld d, a
+
+
+
+; 	srl d 		   ; this is evil bit hacking, but it's much more efficient than actually multiplying
+; 	jr nc, .shift1 ; this shit only works becuase wOverworldMapBlocks is square and has power of 2 dimensions
+; 	set $05, e     ; this makes me cry on the inside. Too bad!
+; .shift1:
+; 	srl d
+; 	jr nc, .shift2
+; 	set $06, e
+; .shift2:
+; 	srl d
+; 	jr nc, .shift3
+; 	set $07, e
+; .shift3: ; de should now have our offset within wOverworldMapBlocks
 	ld hl, wOverworldMapBlocks
 	add hl, de ; hl now has the address of the block we need
-	ld d, $00
 	ld e, [hl] ; e has the block id
-	sla e ; x2
-	rl d
-	sla e ; x4
-	rl d
-	sla e ; x8
-	rl d
-	sla e ; x16
-	rl d
+	swap e ; swapmagic
+	ld a, e
+	and a, $0F
+	ld d, a
+	ld a, e
+	and a, $F0
+	ld e, a
+	
 	ld hl, wTilesetBlocksAddress
 	ld a, [hli] ; we should already be in the right bank, so we only need to worry about the address
 	ld h, [hl]
@@ -245,8 +257,8 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 	ld a, SCREEN_WIDTH - 1; god i hate doing 16 bit math manually, but it's a cycle faster than using the stack to do it
 	add a, l
 	ld l, a
-	ld a, h
-	adc a, $00
+	adc a, h
+	sub a, l ; funky and faster way to do 16 bit addition
 	ld h, a
 
 	inc de ; effectively add 3 to de but without having to do actual math, horray!
@@ -266,8 +278,8 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 	ld a, $08 ; the only difference between topLeft and the goal of the other copy functions is which tiles are copied from the tileset. they all get copied to the same place regardless
 	add a, e
 	ld e, a
-	ld a, d
-	adc a, $00
+	adc a, d
+	sub a, e ; 16 bit addition the funky way again
 	ld d, a
 	jr .topLeft
 

@@ -174,5 +174,5 @@ hDebugRoomMenuPage::
 endc
 hClockResetTrigger:: db
 hTempBankHigh:: db
-
-	ds 18
+hROMBankBackupHigh:: db
+	ds 17

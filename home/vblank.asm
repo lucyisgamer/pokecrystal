@@ -77,6 +77,8 @@ VBlank0::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a ; make sure we're not clobbering high ROM banks
 
 	ldh a, [hSCX]
 	ldh [rSCX], a
@@ -136,8 +138,10 @@ VBlank0::
 	ld a, BANK(_UpdateSound)
 	rst Bankswitch
 	call _UpdateSound
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
-	rst Bankswitch
+	rst BigBankswitch
 
 	ldh a, [hSeconds]
 	ldh [hUnusedBackup], a
