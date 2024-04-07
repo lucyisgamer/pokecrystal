@@ -16,10 +16,10 @@ CheckScenes::
 	pop hl
 	ret
 
-GetCurrentMapSceneID::
 ; Grabs the wram map scene script pointer for the current map and loads it into wCurMapSceneScriptPointer.
 ; If there is no scene, both bytes of wCurMapSceneScriptPointer are wiped clean.
-; Copy the current map group and number into bc.  This is needed for GetMapSceneID.
+GetCurrentMapSceneID::
+	; Copy the current map group and number into bc.  This is needed for GetMapSceneID.
 	ld a, [wMapGroup]
 	ld b, a
 	ld a, [wMapNumber]
@@ -38,9 +38,9 @@ GetCurrentMapSceneID::
 	xor a
 	ret
 
-GetMapSceneID::
 ; Searches the scene_var table for the map group and number loaded in bc, and returns the wram pointer in de.
 ; If the map is not in the scene_var table, returns carry.
+GetMapSceneID::
 	push bc
 	ldh a, [hROMBank]
 	push af
@@ -85,6 +85,7 @@ GetMapSceneID::
 	ret
 
 OverworldTextModeSwitch::
+	nop
 
 LoadMapPart::
 	call GetScreenCoordinates
@@ -201,6 +202,7 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 	srl d
 	jr nc, .shift2
 	set $06, e
+
 .shift2:
 	srl d
 	jr nc, .shift3
@@ -218,10 +220,10 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 	rl d
 	sla e ; x16
 	rl d
-	ld a, [wTilesetBlocksAddress] ; we should already be in the right bank, so we only need to worry about the address
+	ld hl, wTilesetBlocksAddress
+	ld a, [hli] ; we should already be in the right bank, so we only need to worry about the address
+	ld h, [hl]
 	ld l, a
-	ld a, [wTilesetBlocksAddress + 1]
-	ld h, a
 	add hl, de
 	ld d, h ; de should now have the address of the block we need within the tileset
 	ld e, l
@@ -324,11 +326,7 @@ LoadMetatiles:: ; hl points to whatever buffer we want to load the metatiles to
 .done:
 	ret
 
-ReturnToMapFromSubmenu::
-	push hl
-	;ld hl, wTempBlocksAddress
-	inc [hl]
-	pop hl
+ReturnToMapFromSubmenu:: ; TODO - rewrite needed. scripty bad
 	ld a, MAPSETUP_SUBMENU
 	ldh [hMapEntryMethod], a
 	farcall RunMapSetupScript
@@ -1620,7 +1618,9 @@ ExitAllMenus::
 	call UpdateSprites
 	call GSReloadPalettes
 FinishExitMenu::
-	farcall LoadMapPartsOnSpawn
+	; farcall LoadMapPartsOnSpawn
+	farcall MarkTilesForReload
+	farcall ReloadOWTiles
 	ld b, SCGB_MAPPALS
 	call GetSGBLayout
 	farcall LoadOW_BGPal7

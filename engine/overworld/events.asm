@@ -231,9 +231,9 @@ ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coo
 .charblockLoop
 	farcall TransferCharblock
 	jr c, .charblockLoop
-.tileLoop
+ReloadOWTiles:: ; fallthrough so I can reuse this functionality
 	call TileDMA
-	jr c, .tileLoop
+	jr c, ReloadOWTiles
 	ret
 
 
