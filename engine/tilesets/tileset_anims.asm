@@ -1,5 +1,3 @@
-DEF 1_TILE_GDMA EQUS $00
-
 _AnimateTileset::
 ; Increment [hTileAnimFrame] and run that frame's function
 ; from the array pointed to by wTilesetAnim.
@@ -36,20 +34,6 @@ _AnimateTileset::
 	ld l, a
 
 	jp hl
-
-; Uses GDMA to copy a tile, must be called in VBLANK
-GDMATile:: ; source in bc, destination in de
-	ld hl, rHDMA1
-	ld [hl], b
-	inc l ; the HDMA registers don't cross a $100 boundary
-	ld [hl], c
-	inc l
-	ld [hl], d
-	inc l
-	ld [hl], e
-	inc l
-	ld [hl], 1_TILE_GDMA
-	ret
 
 
 

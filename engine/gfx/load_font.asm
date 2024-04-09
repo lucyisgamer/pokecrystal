@@ -34,9 +34,6 @@ _LoadStandardFont::
 	call Get1bppViaHDMA
 	ret
 
-_LoadFontsExtra1::
-	jr LoadFrame
-
 _LoadFontsExtra2::
 	ret
 
@@ -46,7 +43,7 @@ _LoadFontsBattleExtra::
 	lb bc, BANK(FontBattleExtra), 25
 	call Get2bppViaHDMA
 	jr LoadFrame
-
+_LoadFontsExtra1::
 LoadFrame:
 	ld a, [wTextboxFrame]
 	maskbits NUM_FRAMES

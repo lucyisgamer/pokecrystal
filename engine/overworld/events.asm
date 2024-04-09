@@ -96,28 +96,25 @@ EnterMap:
 	xor a
 	ld [wXYComparePointer], a
 	ld [wXYComparePointer + 1], a
+	dec a
+	ld [wPlayerStepDirection], a ; make sure the map loading doen't use an offset for the player direciton
 	; call SetUpFiveStepWildEncounterCooldown
 	; farcall RunMapSetupScript ; this is what actually tells the game to load the map.
 	ld a, $10 ; TODO - update these to load the actual starting coordinates from the save file
 	ld [wXCoord + 1], a
 	ld a, $10
 	ld [wYCoord + 1], a
-	ld a, $FF
-	ld [wPlayerStepDirection], a ; make sure the map loading doen't use an offset for the player direciton
 	call LoadMapPartsOnSpawn
 	call InitSound
-	call GetMapTimeOfDay ; Pulled from HandleContinueMap
+	call GetMapTimeOfDay
 	call DisableLCD
 	ld [wMapTimeOfDay], a
 	xor a
 	ld [wMapTileset], a
-	call BufferScreen 
-	farcall LoadMapGraphics
+	call BufferScreen
 	farcall LoadMapTimeOfDay
 
-	call LoadFontsExtra
 	farcall LoadOverworldFont
-	farcall RefreshSprites
 
 	call EnableLCD
 	farcall LoadMapPalettes
@@ -126,16 +123,14 @@ EnterMap:
 	ld a, $10
 	ld [wYCoord + 1], a
 	farcall SpawnPlayer
-	; ld b, b
 	farcall RefreshMapSprites
+	farcall RefreshSprites
 	farcall PlayMapMusicBike
 	farcall FadeInPalettes
 	call DisableEvents
 	ldh a, [hMapEntryMethod]
 	cp MAPSETUP_CONNECTION
-	jr nz, .dont_enable
-	call EnableEvents
-.dont_enable
+	call z, EnableEvents
 
 	ldh a, [hMapEntryMethod]
 	cp MAPSETUP_RELOADMAP
@@ -158,8 +153,7 @@ LoadMapPartsOnSpawn::
 	ld c, a
 	ld a, [hli]
 	ld d, a
-	ld a, [hli]
-	ld e, a
+	ld e, [hl]
 	call GetChunkCoords
 	ld bc, $0000
 	ld a, [wXCoord +1] ; This needs to only get the low byte

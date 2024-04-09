@@ -363,89 +363,60 @@ Serve2bppRequest_VBlank::
 
 _Serve2bppRequest:: ; 
 ; Copy [wRequested2bppSize] 2bpp tiles from [wRequested2bppSource] to [wRequested2bppDest]
-	ld hl, wRequested2bppSize
-	ld a, [hli] ; size
-	and a, $7F ; ensure top bit is clear
-	ld b, [hl]
-	inc l
-	ld c, [hl]
-	inc l
-	ld d, [hl]
-	inc l
-	ld e, [hl]
-	ld hl, rHDMA1
-	ld [hl], b
-	inc l
-	ld [hl], c
-	inc l
-	ld [hl], d
-	inc l
-	ld [hl], e
-	inc l
-.again
-	ld [hl], a ; do the transfer
+
+	ld [hSPBuffer], sp
+
+; Source
+	ld hl, wRequested2bppSource
+	ld a, [hli]
+	ld h, [hl]
+	ld l, a
+	ld sp, hl
+
+; Destination
+	ld hl, wRequested2bppDest
+	ld a, [hli]
+	ld h, [hl]
+	ld l, a
+
+; # tiles to copy
 	ld a, [wRequested2bppSize]
-	sub a, $80
-	jr c, .done
-	ld [wRequested2bppSize], a
-	jr .again ; recursion, oh my!
-.done
+	ld b, a
+
 	xor a
 	ld [wRequested2bppSize], a
 
-; 	ld [hSPBuffer], sp
+.next
 
-; ; Source
-; 	ld hl, wRequested2bppSource
-; 	ld a, [hli]
-; 	ld h, [hl]
-; 	ld l, a
-; 	ld sp, hl
+rept 7
+	pop de
+	ld [hl], e
+	inc l
+	ld [hl], d
+	inc l
+endr
+	pop de
+	ld [hl], e
+	inc l
+	ld [hl], d
 
-; ; Destination
-; 	ld hl, wRequested2bppDest
-; 	ld a, [hli]
-; 	ld h, [hl]
-; 	ld l, a
+	inc hl
+	dec b
+	jr nz, .next
 
-; ; # tiles to copy
-; 	ld a, [wRequested2bppSize]
-; 	ld b, a
+	ld a, l
+	ld [wRequested2bppDest], a
+	ld a, h
+	ld [wRequested2bppDest + 1], a
 
-; 	xor a
-; 	ld [wRequested2bppSize], a
+	ld [wRequested2bppSource], sp
 
-; .next
-
-; rept 7
-; 	pop de
-; 	ld [hl], e
-; 	inc l
-; 	ld [hl], d
-; 	inc l
-; endr
-; 	pop de
-; 	ld [hl], e
-; 	inc l
-; 	ld [hl], d
-
-; 	inc hl
-; 	dec b
-; 	jr nz, .next
-
-; 	ld a, l
-; 	ld [wRequested2bppDest], a
-; 	ld a, h
-; 	ld [wRequested2bppDest + 1], a
-
-; 	ld [wRequested2bppSource], sp
-
-; 	ldh a, [hSPBuffer]
-; 	ld l, a
-; 	ldh a, [hSPBuffer + 1]
-; 	ld h, a
-; 	ld sp, hl
-; 	ret
+	ldh a, [hSPBuffer]
+	ld l, a
+	ldh a, [hSPBuffer + 1]
+	ld h, a
+	ld sp, hl
+	ret
 
 AnimateTileset::
 ; Only call during the first fifth of VBlank
