@@ -175,15 +175,15 @@ SECTION "Chunk Load LUT", SRAM
 	sUsedCharblockFlags:: ds $80
 	sTileRefrenceCounts:: ds $180 ; refrence counters for each tile
 	sTileIDLUT:: ds $300
-	sTileAnimationTables:: ds $100
 	sTileIDLUTEnd::
+	sTileAnimationTables:: ds $80
+    sTileAnimationTablesEnd::
 	sTileRefrenceLoopCounter::
 	sCharblockResolveCounter:: db
 	sDirtyCharblockFlags:: ds $20
-	db
 	; 5740 bytes free
 
 SECTION "Charblock Data", SRAM
-	sCharblockData:: 
+	sCharblockData::
 	sCharblockTiles:: ds $1000
 	sCharblockAttributes:: ds $1000
