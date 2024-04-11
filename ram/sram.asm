@@ -176,11 +176,12 @@ SECTION "Chunk Load LUT", SRAM
 	sTileRefrenceCounts:: ds $180 ; refrence counters for each tile
 	sTileIDLUT:: ds $300
 	sTileIDLUTEnd::
-	sTileAnimationTables:: ds $80
-    sTileAnimationTablesEnd::
 	sTileRefrenceLoopCounter::
 	sCharblockResolveCounter:: db
 	sDirtyCharblockFlags:: ds $20
+	ds $80 - $21
+	sTileAnimationTables:: ds $80 ; end of the table is now aligned to a $100 boundary
+	sTileAnimationTablesEnd::
 	; 5740 bytes free
 
 SECTION "Charblock Data", SRAM

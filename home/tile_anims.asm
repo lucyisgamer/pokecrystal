@@ -7,17 +7,16 @@ AnimateTiles::
     push hl
     call AnimateSingleTile
     pop hl
-    add a, $04
+    add a, $04 ; the end of the table is $100 aligned, so a == 0 means we are done
     ld l, a
-    cp a, LOW(sTileAnimationTablesEnd)
     jr nz, .loop
     xor a
-    ldh [rVBK], a
+    ldh [rVBK], a ; leave VBK in a known state after animating
     ret
 
 AnimateSingleTile:: ; hl points to the tile animation table entry
     ld b, [hl] ; destination
-    inc l
+    inc l ; entries don't cross $100 boundaries, so we can get away with only incremneting l
     ld c, [hl]
     inc l
     ld d, [hl] ; source
@@ -31,7 +30,7 @@ AnimateSingleTile:: ; hl points to the tile animation table entry
     ld a, [hli] ; actual destination pointers, stored in wrong endianess (saves a cycle)
     ld b, [hl]
     ld c, a
-    ldh [rVBK], a
+    ldh [rVBK], a ; the bottom bit of the destination pointer tells which VRAM bank to go to
 
 ; Uses GDMA to copy a tile, must be called in VBLANK
 GDMATile:: ; source in bc, destination in de
