@@ -6,7 +6,10 @@
         {
             "label": "buildRom",
             "type": "shell",
-            "command": "wsl make crystal11 DEBUG=1",
+            "command": "make crystal11 DEBUG=1",
+            "windows": {
+                "command": "wsl make crystal11 DEBUG=1"
+            },
             "problemMatcher": ["$rgbdserror", "$rgbdslinkerror"],
             "group": {
                 "kind": "build",

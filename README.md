@@ -13,5 +13,3 @@ While this is still very much a work in progress, I have several ideas for this 
 
 ## Installation
 If you wish to buld this hack for yourself, clone this repository and follow the documentation for the <a href="https://github.com/pret/pokecrystal">pokecrystal</a> project that this hack is based on. 
-
-This repository is currently set up to use a local copy of RGBDS. If you wish to use a system-wide installation, delete the rgbds folder and tell Make to use the system-wide installation of RGBDS.
