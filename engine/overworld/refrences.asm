@@ -221,10 +221,9 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
 
 .loop
     ld e, LOW(wDecompressedCharblockBuffer) ; the buffer doesn't cross a $100 boundary
-    ld b, $00
     bit 3, [hl]
     jr z, .bank0
-    inc b
+    inc b ; bytefill zeros bc, so we can skip rezeroing it
 .bank0
     res 4, h ; load from the tile ids instead
     ld a, [hli] ; it's a cycle faster to use a and a subtraction instead of loading straight to c

@@ -227,6 +227,12 @@ ClearSRAM:: ; clear SRAM banks used by the chunkloading process
 	ld bc, $200 ; sCharblockIDs gets filled with $FF
 	dec a
 	call ByteFill
+	ld bc, $580
+	xor a
+	call ByteFill
+	ld bc, $80 ; sTileAnimationTables also get filled with $FF
+	dec a
+	call ByteFill
 	ld bc, $1600
 	xor a
 	call ByteFill

@@ -17,6 +17,9 @@ AnimateTiles::
 
 AnimateSingleTile:: ; hl points to the tile animation table entry
     ld b, [hl] ; destination
+    inc b
+    ret z ; if the top byte of the destination is $FF (aka not VRAM) this isn't an actual tile, so bail
+    dec b
     inc l ; entries don't cross $100 boundaries, so we can get away with only incremneting l
     ld c, [hl]
     inc l

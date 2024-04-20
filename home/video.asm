@@ -467,7 +467,6 @@ TileDMA::
     ld a, BANK(wOutdatedTileFlags)
     ldh [rSVBK], a
 
-	
     ld hl, wOutdatedTileFlags
 .firstSearch
     ld a, [hl]
@@ -518,6 +517,7 @@ TileDMA::
     inc hl
     ld e, [hl] ; de now has the tle id we need to dma
     call CloseSRAM
+	push de ; save our tile id for (maybe) later
 
 .calcROMBank
     swap d ; amazingly, this is 25% faster and smaller than just shifting by 4
@@ -532,6 +532,7 @@ TileDMA::
     rlc d
     rlca
 	inc a ; bank X00 isn't accessible bc mbc30 shenanigans
+	ld l, a ; save our bank for later checking for animated tiles
 	scf ; set bit 6 of d
     rr d
     srl d
@@ -566,13 +567,11 @@ TileDMA::
 	rla
 	xor a, %00001000 ; flip to account for tile $00 being in the middle of VRAM
 	and a, $0F
-	ld b, a
 
-	ld hl, $8800 ; start of the map tiles
-	add hl, bc ; hl now points to the correct tile
-	ld a, h
+	add a, $88 ; high byte of address, $8800 is the start of tiles
 	ldh [rHDMA3], a
-	ld a, l
+	ld b, a ; save our high byte for easy retrieval later
+	ld a, c ; low byte of address
 	ldh [rHDMA4], a ; destination address now set up
 
 .timingCheck ; starting a transfer during HBLANK causes problems
@@ -582,6 +581,47 @@ TileDMA::
 	jr nz, .timingCheck
 	ld a, SINGLE_TILE_DMA
 	ldh [rHDMA5], a
+	
+
+.checkAnimated ; bc has our destination address, hl has the tile id
+	ld a, l
+	cp a, $40 ; last possible bank for tiles, reserved for animated tiles
+	pop hl ; get our tile id back, this wastes a few cycles if we're not animating
+	; we have to waste them anyways to wait for the transfer to finish, might as well get somethign out of it
+	jr nz, .doneCheck ; if the bank value isn't $40, this tile isn't animated, so skip it
+	ld a, BANK(sTileAnimationTables)
+	call OpenSRAM
+	ld a, h
+	and a, $03 ; mask off the bank bits
+	rl l
+	rla
+	set 6, a ; make sure we're pointing to the switchable rom banks
+	ld h, a
+	ld a, [hli]
+	ld e, [hl]
+	ld d, a ; de now has the pointer to our animation table
+	ld hl, sTileAnimationTables - 3
+.searchTableSlot
+	inc l
+	inc l
+	inc l
+if DEF(_DEBUG)
+	ld a, l
+	cp a, LOW(sTileAnimationTablesEnd)
+	ld b, b ; @!#?@! we're out of animation slots! dropping the last animation...
+	jr .doneCheck
+endc
+	ld a, [hli]
+	inc a
+	jr nz, .searchTableSlot ; if we're not in debug mode then having too many animations at once will (likely) cause an infinite loop and a hang. spicy!
+	dec l
+	ld [hl], c ; destination pointers are stored little endian to save a cycle in the animation routine
+	inc l
+	ld [hl], b
+	inc l
+	ld [hl], d
+	inc l
+	ld [hl], e
 
 .doneCheck
 	ldh a, [rHDMA5]
