@@ -607,9 +607,8 @@ TileDMA::
 	inc l
 if DEF(_DEBUG)
 	ld a, l
-	cp a, LOW(sTileAnimationTablesEnd)
-	ld b, b ; @!#?@! we're out of animation slots! dropping the last animation...
-	jr .doneCheck
+	cp a, LOW(sTileAnimationTablesEnd) ; @!#?@! we're out of animation slots! dropping the last animation...
+	jr z, .doneCheck
 endc
 	ld a, [hli]
 	inc a

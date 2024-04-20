@@ -197,7 +197,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     push de ; de is the only register pair this function needs to save
     
     ld a, BANK(sCharblockData) ; switch to the charblock data bank
-    ld [MBC3SRamBank], a
+    call OpenSRAM
     ldh a, [rSVBK] ; save our current WRAM bank
     push af
     ld a, BANK(wDecompressedCharblockBuffer)
@@ -258,7 +258,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
 ; the list is complete
 
     ld a, BANK(sTileRefrenceCounts)
-    ld [MBC3SRamBank], a ; switch back to our original SRAM bank
+    call OpenSRAM ; switch back to our original SRAM bank
 
     ld e, LOW(wDecompressedCharblockBuffer) ; we still haven't touched d
 .decrementLoop
@@ -270,6 +270,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     ld a, [de]
     ld l, a ; the tile slot already corresponds to the address of it's refrence count
     dec [hl]
+    call z, checkAnimated ; if we've completely derefrenced a tile, clear out it's animation data, if any
     inc e
     ld a, [de]
     inc a
@@ -279,6 +280,64 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     ldh [rSVBK], a ; restore our WRAM bank  
     pop de
     ret
+
+CheckAnimated::
+    dec e
+    ld a, [de]
+    inc e
+    ld b, a ; b has the tile we need to check
+    cpl
+    and a, %11111100 ; if z flag is set our tile is animated
+    ret nz ; bail if it isn't
+
+    push de
+    ld de, -sCharblockLUTEnd
+    add hl, de ; hl now has our tile slot ID
+
+    swap l ; swapmagic time
+    ld a, l
+    and a, $F0
+    or a, h ; the lowest bit of h determines what VRAM bank this goes into, we shove it into the bottom bit of l
+    ld d, a ; the VBLANK routine uses that lower bit to switch banks really fast
+    swap h
+    ld a, l
+    and a, $0F
+    or a, h
+    ld h, a
+    ld l, d ; retrieve our touched value for l
+
+    ld de, vTiles1 ; start of background tiles (technically font tiles, but IDs already have a $80 offset)
+    add hl, de ; hl now has the VRAM destination
+    ld d, h
+    ld e, l
+    ld hl, sTileAnimationTables - 3
+.search
+    inc l
+    inc l
+    inc l
+if DEF(_DEBUG)
+	ld a, l
+	cp a, LOW(sTileAnimationTablesEnd)
+	jr z, .done ; @!#?@! we didn't fine an active animation table for this tile?! bailing I guess
+endc
+    ld a, [hli]
+    cp a, d
+    jr nz, .search
+    ld a, [hl]
+    cp a, e
+    jr nz, .search
+
+    dec l ; found the slot, clear it out
+    dec a
+    ld [hli], a
+    ld [hli], a
+    ld [hli], a
+    ld [hli], a
+.done
+    pop de
+    ret
+
+
 
 ApplyCharblockLUT::
     ld a, [wNewChunkFlags + 1]
