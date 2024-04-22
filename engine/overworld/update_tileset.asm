@@ -153,8 +153,7 @@ UnrefrenceTiles:: ; this assumes we are already in the correct WRAM bank. if we'
     push bc
     
     ld a, BANK(sCharblockData)
-    ld [hSRAMBank], a
-    ld [MBC3SRamBank], a
+    call OpenSRAM
     ld l, b
     ld h, $05 ; when rotated left by 5 we get $A0, which is the top half of the starting address of SRAM
     sla l ; we're gettin schwifty here
@@ -222,9 +221,8 @@ UnrefrenceTiles:: ; this assumes we are already in the correct WRAM bank. if we'
     pop bc
     pop hl
     pop de
-    pop af
-    ldh [hSRAMBank], a
-    ld [MBC3SRamBank], a
+    pop af ; get our SRAM bank back
+    call OpenSRAM
     ret ; finally we're done!
 
 UnpackCharblockData:: ; copies and unpacks charblock id de into wDecompressedCharblockBuffer. Doesn't actually copy the data into SRAM. Also puts the charblock id into the LUT

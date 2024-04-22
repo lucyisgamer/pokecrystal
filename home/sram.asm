@@ -36,6 +36,7 @@ endc
 ; select sram bank
 	pop af
 	ld [MBC3SRamBank], a
+	ldh [hSRAMBank], a
 	ret
 
 CloseSRAM::

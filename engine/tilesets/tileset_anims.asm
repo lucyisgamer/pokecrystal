@@ -5,7 +5,6 @@ _AnimateTileset::
 ; Called in WRAM bank 1, VRAM bank 0, so map tiles
 ; $80 and above in VRAM bank 1 cannot be animated
 ; without switching to that bank themselves.
-	ret
 	ld a, [wTilesetAnim]
 	ld e, a
 	ld a, [wTilesetAnim + 1]

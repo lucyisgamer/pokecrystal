@@ -11,8 +11,6 @@ AnimateTiles::
     add a, $04 ; the end of the table is $100 aligned, so a == 0 means we are done
     ld l, a
     jr nz, .loop
-    xor a
-    ldh [rVBK], a ; leave VBK in a known state after animating
     ret
 
 AnimateSingleTile:: ; hl points to the tile animation table entry

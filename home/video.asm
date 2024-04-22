@@ -432,11 +432,6 @@ AnimateTileset::
 	cp LY_VBLANK + 7
 	ret nc
 
-	ldh a, [hROMBank]
-	push af
-	ld a, BANK(_AnimateTileset)
-	rst Bankswitch
-
 	ldh a, [rSVBK]
 	push af
 	ld a, BANK(wTilesetAnim)
@@ -444,17 +439,28 @@ AnimateTileset::
 
 	ldh a, [rVBK]
 	push af
-	ld a, 0
-	ldh [rVBK], a
 
-	call _AnimateTileset
+	ldh a, [hSRAMBank]
+	push af
+
+	call AnimateTiles
+
+	ld hl, hTileAnimFrame ; somehow this is faster than using ldh
+	ld a, [hl]
+	add a, $01
+	ld [hli], a
+	ld a, [hl]
+	adc a, $00
+	and a, $0F
+	ld [hl], a
+
+	pop af
+	call OpenSRAM
 
 	pop af
 	ldh [rVBK], a
 	pop af
 	ldh [rSVBK], a
-	pop af
-	rst Bankswitch
 	ret
 
 TileDMA::
@@ -593,9 +599,9 @@ TileDMA::
 	call OpenSRAM
 	ld a, h
 	and a, $03 ; mask off the bank bits
-	rl l
+	sla l
 	rla
-	set 6, a ; make sure we're pointing to the switchable rom banks
+	add a, $78 ; offset for animation table pointers being stored at the end of the graphics bank
 	ld h, a
 	ld a, [hli]
 	ld e, [hl]

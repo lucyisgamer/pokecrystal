@@ -318,11 +318,11 @@ CheckAnimated::
 if DEF(_DEBUG)
 	ld a, l
 	cp a, LOW(sTileAnimationTablesEnd)
-	jr z, .done ; @!#?@! we didn't fine an active animation table for this tile?! bailing I guess
+	jr z, .done ; @!#?@! we didn't find an active animation table for this tile?! bailing I guess
 endc
     ld a, [hli]
     cp a, d
-    jr nz, .search
+    jr nz, .search ; if we're not in debug mode not finding an active table will hang. too bad!
     ld a, [hl]
     cp a, e
     jr nz, .search
@@ -435,8 +435,8 @@ CopyCharblock::
     ld a, l
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
-    ld a, l
-    scf
+    ld a, l ; this is just a fancy way to calculate the address and bank offset for our charblock
+    scf ; it's twice as fast as just shifting
     rra
     srl a
     ld h, a

@@ -123,7 +123,6 @@ hLCDCPointer::     db
 hLYOverrideStart:: db
 hLYOverrideEnd::   db
 
-hMobileReceive::             db
 hSerialReceivedNewData::     db
 hSerialConnectionStatus::    db
 hSerialIgnoringInitialData:: db
@@ -148,7 +147,7 @@ hBGMapTileCount:: db
 
 
 hMapAnims::      db
-hTileAnimFrame:: db
+hTileAnimFrame:: dw
 
 hLastTalked:: db
 
@@ -166,7 +165,6 @@ hCGB::          db
 hSGB::          db
 
 hDMATransfer:: db
-hMobile:: db
 hSystemBooted:: db
 
 if DEF(_DEBUG)
@@ -175,4 +173,4 @@ endc
 hClockResetTrigger:: db
 hTempBankHigh:: db
 hROMBankBackupHigh:: db
-	ds 17
+	ds 18
