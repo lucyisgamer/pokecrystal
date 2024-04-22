@@ -270,7 +270,7 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     ld a, [de]
     ld l, a ; the tile slot already corresponds to the address of it's refrence count
     dec [hl]
-    call z, checkAnimated ; if we've completely derefrenced a tile, clear out it's animation data, if any
+    ; call z, CheckAnimated ; if we've completely derefrenced a tile, clear out it's animation data, if any
     inc e
     ld a, [de]
     inc a
@@ -291,7 +291,7 @@ CheckAnimated::
     ret nz ; bail if it isn't
 
     push de
-    ld de, -sCharblockLUTEnd
+    ld de, $10000 - sCharblockLUTEnd
     add hl, de ; hl now has our tile slot ID
 
     swap l ; swapmagic time
@@ -336,8 +336,6 @@ endc
 .done
     pop de
     ret
-
-
 
 ApplyCharblockLUT::
     ld a, [wNewChunkFlags + 1]
@@ -437,19 +435,26 @@ CopyCharblock::
     ld a, l
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
-    xor a
-    REPT 6 ; log2(CHARBLOCK_SIZE)
-    sla l
-    rl h
-    rla
-    ENDR
-    sla h ; adjust for rom banks being only 1/4 of the address space
-    rla
-    sla h
-    rla
-    scf ; sneaky way to set the sixth bit of h
-    rr h
-    srl h
+    ld c, h
+
+    ; REPT 6 ; log2(CHARBLOCK_SIZE)
+    ; sla l
+    ; rl h
+    ; rla
+    ; ENDR
+
+    ld a, l
+    rrca
+    rrca
+    and a, %00111111
+    or a, %01000000
+    ld h, a
+    ld a, l
+    rrca
+    rrca
+    and a, %11000000
+    ld l, a
+    ld a, c
     
     ld bc, CHARBLOCK_START_BANK
     add a, c
