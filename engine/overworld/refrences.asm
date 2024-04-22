@@ -430,24 +430,15 @@ CopyCharblock::
     add hl, de
     ld a, [hli]
     ld l, [hl] ; hl now has the charblock id we need to get
-    ld h, a
+    ld c, a
     ld [wCharblockBufferID], a
     ld a, l
     ld [wCharblockBufferID + 1], a ; save our id for laterz
 
-    ld c, h
-
-    ; REPT 6 ; log2(CHARBLOCK_SIZE)
-    ; sla l
-    ; rl h
-    ; rla
-    ; ENDR
-
     ld a, l
-    rrca
-    rrca
-    and a, %00111111
-    or a, %01000000
+    scf
+    rra
+    srl a
     ld h, a
     ld a, l
     rrca
