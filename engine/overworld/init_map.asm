@@ -95,8 +95,14 @@ HDMATransfer_FillBGMap0WithBlack:
 	ldh [rHDMA3], a
 	ld a, LOW(vBGMap0 - VRAM_Begin)
 	ldh [rHDMA4], a
-	ld a, $3f
-	ldh [hDMATransfer], a
+.timingCheck
+	ldh a, [rSTAT]
+	and a, %00000011
+	cp a, $02
+	jr nz, .timingCheck
+	ld a, $BF
+	ldh [rHDMA5], a
+	
 	call DelayFrame
 
 	pop af

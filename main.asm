@@ -631,7 +631,16 @@ SECTION "Chunk Headers 1", ROMX
 INCBIN "map/headers/headers1.bin"
 
 SECTION "Tiles 0", ROMX
-INCBIN "map/tileset.2bpp"
+INCBIN "map/tileset.2bpp", $0000, $3FFF
+
+SECTION "Tiles 1", ROMX
+INCBIN "map/tileset.2bpp", $4000, $3FFF
+
+SECTION "Tiles 2", ROMX
+INCBIN "map/tileset.2bpp", $8000, $3FFF
+
+SECTION "Tiles 3", ROMX
+INCBIN "map/tileset.2bpp", $C000, $3FFF
 
 SECTION "Indices 0", ROMX
 INCBIN "map/indices/indices0.bin"

@@ -14,34 +14,100 @@ AnimateTiles::
     ret
 
 AnimateSingleTile:: ; hl points to the tile animation table entry
-    ld b, [hl] ; destination
-    inc b
-    ret z ; if the top byte of the destination is $FF (aka not VRAM) this isn't an actual tile, so bail
-    dec b
-    inc l ; entries don't cross $100 boundaries, so we can get away with only incremneting l
-    ld c, [hl]
-    inc l
-    ld d, [hl] ; source
-    inc l
-    ld e, [hl]
+    ld a, [hli]
+    ld b, a ; destination high
+    ld a, [hli]
+    ld c, a ; destination low
+    ld d, h ; save the pointer to our table pointer
+    ld e, l
+
+    ld a, [hli] ; table high
+    ld l, [hl] ; table low
+    ld h, a
+    ld a, [hli]
+    inc a
+    jr z, Rollover
+    dec a
+    ld d, a ; frame number high
+
     ldh a, [hTileAnimFrame]
-    ld l, a
-    ld h, $00
-    add hl, hl ; pointers are 16 bit
-    add hl, de
-    ld a, [hli] ; actual destination pointers, stored in wrong endianess (saves a cycle)
-    ld b, [hl]
-    ldh [rVBK], a ; the bottom bit of the destination pointer tells which VRAM bank to go to
+    cp a, d 
+    ret nz ; not the right frame, bail
+    ld a, [hli]
+    ld e, a ; frame number low
+    ldh a, [hTileAnimFrame + 1]
+    cp a, e
+    ret nz
+
+    ld a, [hli] ; source high
+    ld d, [hl] ; source low
+    
 
 ; Uses GDMA to copy a tile, must be called in VBLANK
-GDMATile:: ; source in ba, destination in de
-    ldh [rHDMA2], a
-    ld a, b
-    ldh [rHDMA1], a
+GDMATile:: ; source in ad, destination in bc
+    ld hl, rHDMA1
+    ld [hli], a
     ld a, d
-    ldh [rHDMA3], a
-    ld a, e
-    ldh [rHDMA4], a
+    ld [hli], a
+    ld a, b
+    ld [hli], a
+    ld a, c
+    ld [hli], a
     xor a
-    ldh [rHDMA5], a
+    ld [hl], a
     ret
+
+Rollover::
+    inc l
+    ld a, [hli]
+    ld [de], a
+    inc e
+    ld a, [hl]
+    ld [de], a
+    ret
+
+TickAnimatons::
+    ld h, HIGH(rHDMA1)
+    ld de, sTileAnimationTables
+    ld c, LOW(rVBK)
+    ld b, $00
+.loop
+    ld l, LOW(rHDMA1)
+    ld a, [de] ; load source high
+    inc e
+    ld [hli], a ; write source high
+
+    ld a, [de] ; load source low
+    inc e
+    ld [hli], a ; write source low (bottom bit specifies destination VBK)
+    ldh [c], a ; write rVBK
+
+    ld a, [de] ; load destination high AND low (swapped)
+    inc e
+    ld [hli], a ; write destination high
+    ld [hli], a ; write destination low
+    ld [hl], b ; start transfer
+    ; dec b
+    ; jr nz, .loop
+    ret
+
+    ld hl, rHDMA1
+    ld sp, sTileAnimationTablesEnd
+    ld c, LOW(rVBK)
+    ld b, $00
+; .loop
+    ld l, LOW(rHDMA1)
+    pop de
+    ld a, d
+    ld [hli], a ; source high
+    ld a, e
+    ld [hli], a ; source low
+    ldh [c], a
+    pop de
+    ld a, d
+    ld [hli], a ; destination high
+    ld a, e
+    ld [hli], a ; destination low
+    ; ld a, e ; $00 (start DMA)
+    ld [hl], b 
+

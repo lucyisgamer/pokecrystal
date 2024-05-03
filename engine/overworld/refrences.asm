@@ -59,25 +59,22 @@ ResolveCharblockLUT::
 
     ld c, a
     ld b, $00
-    sla c
-    rl b ; bc now has the index of the charblock that we need to fuck with
     ld hl, sCharblockLUT
+    add hl, bc
     add hl, bc ; hl now points to the charblock we need to fuck with
     
-    ld b, [hl]
-    inc hl
+    ld a, [hli]
     ld c, [hl] ; bc now has the id of the charblock we need to fuck with
+    ld b, a
     ld hl, sCharblockIDs
 .searchLoop
-    ld a, b
-    cp a, [hl]
-    inc hl
+    ld a, [hli]
+    cp a, b
     jr nz, .next
-    ld a, c
-    cp a, [hl]
+    ld a, [hli]
+    cp a, c
     jr z, .match
 .next
-    inc hl
     bit $02, h ; test if we are at the end of sCharblockIDs
     jr z, .searchLoop
 
@@ -105,22 +102,19 @@ ResolveCharblockLUT::
     ld [hl], a
 .insertIndex
     ld d, $00
-    sla e
-    rl d
     ld hl, sCharblockIDs
     add hl, de
+    add hl, de
+
     ld a, [hl] ; save our old id so we know if we need derefrence it or not
     ld [hl], b
     inc hl
     ld b, [hl] ; ab now holds our old id, if it's $FFFF we shouldn't derefrence it
     ld [hl], c
     cp a, b
-    jr nz, .derefrence
-    inc a
-.derefrence
     call nz, DerefrenceOldBlock
-    rr d
-    rr e ; e now holds which slot this block is in
+    inc a
+    call nz, DerefrenceOldBlock
 .setDirtyBit
     ld a, e
     and a, %00000111
@@ -149,6 +143,7 @@ ResolveCharblockLUT::
     jr .end
 
 .match
+    dec hl
     rr h
     rr l ; l has the index in sCharblockIDs that matches the id we're trying to insert
     ld b, l
@@ -162,8 +157,9 @@ ResolveCharblockLUT::
     ld a, [wNewChunkFlags + 1] ; add refrence flag for this block
     and a, $F0
     ld hl, sUsedCharblockFlags
+    ld e, b
     srl e
-    jr c, .noSwapMatch
+    jr nc, .noSwapMatch
     swap a
 .noSwapMatch
     add hl, de
@@ -210,15 +206,15 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     and a, $F0
     ld e, a
     
-    ld hl, sCharblockAttributes ; we want the high bit first
-    add hl, de ; hl now points to the start of the block we're fucking with
-
-    ld de, wDecompressedCharblockBuffer
+    ld hl, wDecompressedCharblockBuffer
+    ld d, h
     ld bc, $0022 ; we need $20 bytes to store the tile slots plus 2 more as a terminator
     xor a
     dec a
     call ByteFill
-
+    
+    ld hl, sCharblockAttributes ; we want the high bit first
+    add hl, de ; hl now points to the start of the block we're fucking with
 .loop
     ld e, LOW(wDecompressedCharblockBuffer) ; the buffer doesn't cross a $100 boundary
     bit 3, [hl]
@@ -277,7 +273,9 @@ DerefrenceOldBlock:: ; derefrence the tiles in block e
     jr nz, .decrementLoop ; if the top byte of the next item isn't $FF, we still have items to process
 
     pop af
-    ldh [rSVBK], a ; restore our WRAM bank  
+    ldh [rSVBK], a ; restore our WRAM bank
+    xor a
+    dec a
     pop de
     ret
 
@@ -481,7 +479,7 @@ ResolveCharblockTiles::
     jr nz, .start
     ld a, [wCharblockBufferID]
     inc a
-    jr z, .finished
+    jp z, .finished
     
 .start
     ld bc, wDecompressedCharblockTileIDs - 1
@@ -494,35 +492,63 @@ ResolveCharblockTiles::
     ld d, a
     ld a, [bc]
     ld e, a ; de has the tile id we are searching for
+    
     ld hl, sTileIDLUT
-
-.search
+.search ; check if the tile ID is already in the LUT
     ld a, [hli]
     cp a, d
     jr nz, .next
     ld a, [hl]
     cp a, e
-    jr z, .existing
+    jr z, .existing ; it is, update the reference count and copy back the index
 .next
     inc hl
     ld a, h
-    cp a, HIGH(sTileIDLUTEnd)
+    cp a, HIGH(sAnimatedTileIDLUTEnd) ; this search checks both regular and animated tiles
     jr nz, .search
-.new
-    ld hl, sTileRefrenceCounts
+    ld a, d
+    and a, %11111100
+    cp a, %11111100
+    jr z, .animatedNew ; if a tile is animated it gets inserted into a different place
+
+.new ; the tile isn't already in the LUT, insert it
+    ld hl, sTileRefrenceCounts ; animated tiles have their extra data populated by TileDMA
 .newLoop
     ld a, [hli]
     and a
-; if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
     jr z, .slotFound
+if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
     ld a, h
-    cp a, HIGH(sTileRefrenceCounts) + 1
+    cp a, HIGH(sTileRefrenceCounts)
+    jr nz, .newLoop
+    ld a, l
+    cp a, LOW(sTileRefrenceCountsEnd)
     jr nz, .newLoop
     ld b, b
     stop
-; else
-;     jr nz, .newLoop ; if not, don't bother bounds checking
-; endc
+else
+    jr nz, .newLoop ; if not, don't bother bounds checking
+endc
+
+.animatedNew ; the tile isn't already in the LUT, insert it
+    ld hl, sAnimatedTileRefrenceCounts ; animated tiles have their extra data populated by TileDMA
+.animateNewLoop
+    ld a, [hli]
+    and a
+    jr z, .slotFound
+if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
+    ld a, h
+    cp a, HIGH(sAnimatedTileRefrenceCounts)
+    jr nz, .animateNewLoop
+    ld a, l
+    cp a, LOW(sAnimatedTileRefrenceCountsEnd)
+    jr nz, .animateNewLoop
+    ld b, b
+    stop
+else
+    jr nz, .animateNewLoop ; if not, don't bother bounds checking
+endc
+
 .slotFound
     dec hl
     ld a, h ; the low byte of hl is already adjusted, so we don't need to mess with it
@@ -578,7 +604,13 @@ ENDR
     dec a
     jr z, .finished
     push af
+if DEF(_DEBUG)
+    jp .loop
+else
     jr .loop
+endc
+
+
 
 .finished
     call PutCharblock

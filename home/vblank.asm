@@ -62,18 +62,7 @@ VBlank0::
 	ld hl, hVBlankCounter
 	inc [hl]
 
-	; advance random variables
-	ldh a, [rDIV]
-	ld b, a
-	ldh a, [hRandomAdd]
-	adc b
-	ldh [hRandomAdd], a
-
-	ldh a, [rDIV]
-	ld b, a
-	ldh a, [hRandomSub]
-	sbc b
-	ldh [hRandomSub], a
+	
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
@@ -96,8 +85,6 @@ VBlank0::
 	jr c, .done
 	call UpdatePalsIfCGB
 	jr c, .done
-	call DMATransfer
-	jr c, .done
 	call UpdateBGMap
 
 	; These have their own timing checks.
@@ -118,6 +105,20 @@ VBlank0::
 
 	xor a
 	ld [wVBlankOccurred], a
+
+
+	; advance random variables
+	ldh a, [rDIV]
+	ld b, a
+	ldh a, [hRandomAdd]
+	adc b
+	ldh [hRandomAdd], a
+
+	ldh a, [rDIV]
+	ld b, a
+	ldh a, [hRandomSub]
+	sbc b
+	ldh [hRandomSub], a
 
 	ld a, [wOverworldDelay]
 	and a
@@ -175,6 +176,8 @@ VBlank1::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a
 
 	ldh a, [hSCX]
 	ldh [rSCX], a
@@ -213,8 +216,10 @@ VBlank1::
 	ld a, BANK(_UpdateSound)
 	rst Bankswitch
 	call _UpdateSound
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
-	rst Bankswitch
+	rst BigBankswitch
 	di
 
 	; get requested ints
@@ -259,6 +264,8 @@ VBlank3::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a
 
 	ldh a, [hSCX]
 	ldh [rSCX], a
@@ -291,8 +298,10 @@ VBlank3::
 	ld a, BANK(_UpdateSound)
 	rst Bankswitch
 	call _UpdateSound
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
-	rst Bankswitch
+	rst BigBankswitch
 	di
 
 	; request lcdstat
@@ -323,6 +332,8 @@ VBlank4::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a
 
 	call UpdateBGMap
 	call Serve2bppRequest
@@ -340,8 +351,10 @@ VBlank4::
 	rst Bankswitch
 	call _UpdateSound
 
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
-	rst Bankswitch
+	rst BigBankswitch
 	ret
 
 VBlank5::
@@ -354,6 +367,8 @@ VBlank5::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a
 
 	ldh a, [hSCX]
 	ldh [rSCX], a
@@ -381,8 +396,10 @@ VBlank5::
 	ld a, BANK(_UpdateSound)
 	rst Bankswitch
 	call _UpdateSound
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
-	rst Bankswitch
+	rst BigBankswitch
 	di
 
 	xor a
@@ -400,6 +417,8 @@ VBlank6::
 
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
+	ldh a, [hROMBankHigh]
+	ldh [hROMBankBackupHigh], a
 
 	; inc frame counter
 	ld hl, hVBlankCounter
@@ -410,7 +429,6 @@ VBlank6::
 
 	call Serve2bppRequest
 	call Serve1bppRequest
-	call DMATransfer
 .done
 
 	xor a
@@ -420,6 +438,8 @@ VBlank6::
 	rst Bankswitch
 	call _UpdateSound
 
+	ldh a, [hROMBankBackupHigh]
+	ld h, a
 	ldh a, [hROMBankBackup]
 	rst Bankswitch
 	ret

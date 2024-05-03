@@ -258,6 +258,12 @@ ROMX $105
 	"Blocks 0"
 ROMX $201
 	"Tiles 0"
+ROMX $202
+	"Tiles 1"
+ROMX $203
+	"Tiles 2"
+ROMX $204
+	"Tiles 3"
 ROMX $E01
 	"Chunks 0"
 

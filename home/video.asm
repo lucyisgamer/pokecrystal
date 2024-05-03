@@ -1,22 +1,5 @@
 ; Functions dealing with VRAM.
 
-DMATransfer::
-; Return carry if the transfer is completed.
-
-	ldh a, [hDMATransfer]
-	and a
-	ret z
-
-; Start transfer
-	ldh [rHDMA5], a
-
-; Execution is halted until the transfer is complete.
-
-	xor a
-	ldh [hDMATransfer], a
-	scf
-	ret
-
 UpdateBGMapBuffer::
 ; Copy [hBGMapTileCount] 16x8 tiles from wBGMapBuffer
 ; to bg map addresses in wBGMapBufferPointers.
