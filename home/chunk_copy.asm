@@ -26,10 +26,10 @@ Copy8bpc:: ; assumes wChunkHeader and wChunkQuadrant are correct
 
     ld b, $00
 .loop
-    inc b
-    jr z, .done
     ld a, [hli]
     ld [de], a
+    inc b ; check for completion after copying
+    jr z, .done ; otherwise we miss the last byte
     inc de
     ld a, e
     and a, $0F

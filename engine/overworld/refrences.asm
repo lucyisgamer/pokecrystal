@@ -149,11 +149,11 @@ ResolveCharblockLUT::
     ld b, l
     ld a, [sCharblockResolveCounter]
     ld hl, sCharblockLUT
-    ld d, $00
-    ld e, a
-    add hl, de
+    add a, l
+    ld l, a
     ld [hl], b
-
+    
+    ld d, $00
     ld a, [wNewChunkFlags + 1] ; add refrence flag for this block
     and a, $F0
     ld hl, sUsedCharblockFlags
