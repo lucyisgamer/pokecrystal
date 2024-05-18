@@ -29,15 +29,17 @@ processAsyncEvents:: ; runs after the overworld loop is done. put things that do
     dw CopyBlocksetIDs
     dw ResolveCharblockLUT
     dw ApplyCharblockLUT
-    dw TransferCharblock
+    dw CopyCharblock
+    dw ResolveCharblockTiles
 
 ; note: each scanline is 228 cycles
 .timings: ; timings here means how many scanlines it takes for the routine to run once in the worst case
-    db $01, LOAD_CHUNK ; these are listed in priority order
+    db $22, LOAD_CHUNK ; these are listed in priority order
     db $04, COPY_BLOCKSET_IDS
     db $14, RESOLVE_CHARBLOCK_LUT
     db $09, APPLY_CHARBLOCK_LUT
-    db $20, TRANSFER_CHARBLOCK
+    db $20, COPY_CHARBLOCK
+    db $40, RESOLVE_CHARBLOCK_TILES
     db $04, DMA_TILE
     db $00, END ; this is here to provide a simple escape hatch
 
@@ -47,7 +49,8 @@ DEF DMA_TILE EQU $02
 DEF COPY_BLOCKSET_IDS EQU $03
 DEF RESOLVE_CHARBLOCK_LUT EQU $04
 DEF APPLY_CHARBLOCK_LUT EQU $05
-DEF TRANSFER_CHARBLOCK EQU $06
+DEF COPY_CHARBLOCK EQU $06
+DEF RESOLVE_CHARBLOCK_TILES EQU $07
 
 .End
     add sp, 4 ; evil stack mangling to break out of processing events

@@ -291,7 +291,7 @@ WRAMX 1
 	"even more WRAM 1 shit"
 WRAMX 2
 	"Pic Animations"
-	org $d28C
+	org $d28A
 	"Charblock Flags"
 WRAMX 5
 	align 8

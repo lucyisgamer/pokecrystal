@@ -452,19 +452,22 @@ CopyCharblock::
     ld a, CHARBLOCK_SIZE
     and a ; clear carry flag
     call ReallyFarCopyBytes
+    ld a, LOW(wDecompressedCharblockTileIDs)
+    ld [wCharblockTilePointer], a
 
 .finished
     call CloseSRAM
     pop af
     ldh [rSVBK], a ; return to our old wram bank
-    and a ; make sure carry flag is clear
+    xor a ; make sure carry flag is clear and z flag is set
     ret
 
 .noMore ; it's time to STOP
     call CloseSRAM
     pop af
     ldh [rSVBK], a ; return to our old wram bank
-    scf ; make sure carry flag is clear
+    ld a, $01 ; ensure anding a clears the z flag
+    and a ; make sure carry flag is clear
     ret
 
 ResolveCharblockTiles::
@@ -477,18 +480,15 @@ ResolveCharblockTiles::
     ld a, [wCharblockBufferID] ; check that wCharblockBufferID isn't $FFFF
     inc a
     jr nz, .start
-    ld a, [wCharblockBufferID]
+    ld a, [wCharblockBufferID + 1]
     inc a
     jp z, .finished
-    
 .start
-    ld bc, wDecompressedCharblockTileIDs - 1
-    ld a, [bc] ; bc now points to the tile ids and a has the number of tiles this block uses
-    inc bc
-    push af
-.loop
+    ld b, HIGH(wDecompressedCharblockTileIDs)
+    ld a, [wCharblockTilePointer]
+    ld c, a
     ld a, [bc]
-    inc bc
+    inc c
     ld d, a
     ld a, [bc]
     ld e, a ; de has the tile id we are searching for
@@ -535,8 +535,8 @@ endc
 .animateNewLoop
     ld a, [hli]
     and a
-    jr z, .slotFound
 if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
+    jr z, .slotFound
     ld a, h
     cp a, HIGH(sAnimatedTileRefrenceCounts)
     jr nz, .animateNewLoop
@@ -557,27 +557,29 @@ endc
     call PutSlotIDAndUpdateRefrenceCount
 .insertID
     push hl
-    sla l
-    rl h
+    add hl, hl
     ld a, h
     add a, HIGH(sTileIDLUT - $100) ; tile numbers start at $80 (becomes $100 when shifted left)
     ld h, a
     ld [hl], d
-    inc hl
+    inc l
     ld [hl], e
     pop hl
 
 .markDirty
     ld a, l
+    rra
     and a, %00000111
     ld d, a
     
-    ld a, %10000000
+    ld a, l
 REPT 3 ; divide hl by 8 to convert from bytes to bits
     srl h
-    rr l
+    rra
 ENDR
+    ld l, a
     inc d
+    ld a, %10000000
 .dirtyLoop
     rlca
     dec d
@@ -600,41 +602,42 @@ ENDR
     rr l ; divide by 2
     call PutSlotIDAndUpdateRefrenceCount
 .checkDone
-    pop af
-    dec a
+    ld hl, wDecompressedCharblockTileLength
+    dec [hl]
     jr z, .finished
-    push af
-if DEF(_DEBUG)
-    jp .loop
-else
-    jr .loop
-endc
-
-
+    inc c
+    ld a, c
+    ld [wCharblockTilePointer], a
+    call CloseSRAM
+    pop af
+    ldh [rSVBK], a
+    scf
+    ret
 
 .finished
     call PutCharblock
     call CloseSRAM
     
     ld a, $FF
-    ld [wCharblockBufferID], a
-    ld [wCharblockBufferID + 1], a
+    ld hl, wCharblockBufferID
+    ld [hli], a
+    ld [hl], a
     pop af
     ldh [rSVBK], a
+    and a
     ret
     
 
 PutSlotIDAndUpdateRefrenceCount:
     ld a, l
     ld [bc], a ; put the slot id where the tile id was
-    dec bc
+    dec c
     ld a, h
     rlca
     rlca
     rlca ; set up the top byte of the tile slot for easy merging of attributes
     ld [bc], a
-    inc bc
-    inc bc
+    inc c
     push de
     ld d, h
     ld e, l

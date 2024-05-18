@@ -3092,6 +3092,7 @@ wDecompressedCharblockAttributes:: ds 16
 wDecompressedCharblockBufferEnd::
 wCharblockBufferID:: dw
 wCharblockBufferSlotID:: db
+wCharblockTilePointer:: db
 	
 wOutdatedTileFlags:: ds 384 / 8
 wOutdatedTileFlagsEnd::
