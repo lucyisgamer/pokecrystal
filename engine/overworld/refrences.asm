@@ -556,7 +556,7 @@ endc
     ld h, a
     call PutSlotIDAndUpdateRefrenceCount
 .insertID
-    push hl
+    push hl ; hl has the tile slot
     add hl, hl
     ld a, h
     add a, HIGH(sTileIDLUT - $100) ; tile numbers start at $80 (becomes $100 when shifted left)
@@ -568,7 +568,6 @@ endc
 
 .markDirty
     ld a, l
-    rra
     and a, %00000111
     ld d, a
     
