@@ -146,10 +146,9 @@ Init::
 
 	ldh a, [hCGB]
 	and a
-	call DoubleSpeed ; DOUBLE SPEED MODE, might not work on real hardware
-	; jr z, .no_double_speed
-	; call NormalSpeed
-; .no_double_speed
+	jr z, .no_double_speed
+	call DoubleSpeed ; DOUBLE SPEED mode, might not work on real hardware
+.no_double_speed
 
 	xor a
 	ldh [rIF], a

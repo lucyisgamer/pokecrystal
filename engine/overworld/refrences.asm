@@ -517,7 +517,7 @@ ResolveCharblockTiles::
     ld a, [hli]
     and a
     jr z, .slotFound
-if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
+if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots 
     ld a, h
     cp a, HIGH(sTileRefrenceCounts)
     jr nz, .newLoop

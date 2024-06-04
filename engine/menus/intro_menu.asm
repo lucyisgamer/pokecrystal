@@ -1271,7 +1271,7 @@ ENDM
 	trail_coords  0,  0, 11, 11
 
 Copyright:
-	call ClearTilemap
+	call ClearTilemapTitle
 	call LoadFontsExtra
 	ld de, CopyrightGFX
 	ld hl, vTiles2 tile $60
