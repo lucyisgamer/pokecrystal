@@ -219,71 +219,132 @@ FarCopyBytesDouble:
 
 Request2bpp::
 ; Load 2bpp at b:de to occupy c tiles of hl.
-	ldh a, [hBGMapMode]
-	push af
-	xor a
-	ldh [hBGMapMode], a
+	ld a, h
+	sub a, $80
+	cp a, $20
+	call nc, NotVRAM
+	ld a, d
+	sub a, $80
+	cp a, $20
+	call c, SourceVRAM
+
 
 	ldh a, [hROMBank]
 	push af
 	ld a, b
 	rst Bankswitch
 
-	ldh a, [hTilesPerCycle]
-	push af
-	ld a, TILES_PER_CYCLE
-	ldh [hTilesPerCycle], a
+	; let's try HDMA for a change
 
-
-	ld a, e
-	ld [wRequested2bppSource], a
-	ld a, d
-	ld [wRequested2bppSource + 1], a
-	ld a, l
-	ld [wRequested2bppDest], a
-	ld a, h
-	ld [wRequested2bppDest + 1], a
+	ld b, c
 .loop
-	ld a, c
-	ld hl, hTilesPerCycle
-	cp [hl]
-	jr nc, .cycle
+	ld c, LOW(rHDMA1)
+	ld a, d
+	ldh [c], a
+	inc c
+	ld a, e
+	ldh [c], a
+	inc c
+	ld a, h
+	ldh [c], a
+	inc c
+	ld a, l
+	ldh [c], a
+	inc c
 
-	ld [wRequested2bppSize], a
+	ld a, b
+	cp a, $80
+	jr c, .notTooManyTiles
+	ld a, $08 ; $80 shifted left by 4
+	add a, d ; we only need to deal with the high byte here bc we're adding $800 ($80 tiles)
+	ld d, a
+	ld a, $08
+	add a, h
+	ld h, a
+	ld a, $7F
+.notTooManyTiles
+	or a, $80 ; top bit set means HDMA
+	ldh [c], a ; a already has the tile count from the previous lines
+
+	jr .wait
+	
 .wait
-	call DelayFrame
-	ld a, [wRequested2bppSize]
-	and a
-	jr nz, .wait
+	ldh a, [rHDMA5]
+	and a, $80
+	jr z, .wait
 
+	ld a, b
+	sub a, $80
+	ld b, a
+	jr nc, .loop
 	pop af
-	ldh [hTilesPerCycle], a
+	jp Bankswitch
 
-	pop af
-	rst Bankswitch
+; 	ld a, e
+; 	ld [wRequested2bppSource], a
+; 	ld a, d
+; 	ld [wRequested2bppSource + 1], a
+; 	ld a, l
+; 	ld [wRequested2bppDest], a
+; 	ld a, h
+; 	ld [wRequested2bppDest + 1], a
+; .loop
+; 	ld a, c
+; 	ld hl, hTilesPerCycle
+; 	cp [hl]
+; 	jr nc, .cycle
 
-	pop af
-	ldh [hBGMapMode], a
+; 	ld [wRequested2bppSize], a
+; .wait
+; 	call DelayFrame
+; 	ld a, [wRequested2bppSize]
+; 	and a
+; 	jr nz, .wait
+
+; 	pop af
+; 	ldh [hTilesPerCycle], a
+
+; 	pop af
+; 	rst Bankswitch
+
+; 	pop af
+; 	ldh [hBGMapMode], a
+; 	ret
+
+; .cycle
+; 	ldh a, [hTilesPerCycle]
+; 	ld [wRequested2bppSize], a
+
+; .wait2
+; 	call DelayFrame
+; 	ld a, [wRequested2bppSize]
+; 	and a
+; 	jr nz, .wait2
+
+; 	ld a, c
+; 	ld hl, hTilesPerCycle
+; 	sub [hl]
+; 	ld c, a
+; 	jr .loop
+
+NotVRAM:
+	ld b, b
 	ret
-
-.cycle
-	ldh a, [hTilesPerCycle]
-	ld [wRequested2bppSize], a
-
-.wait2
-	call DelayFrame
-	ld a, [wRequested2bppSize]
-	and a
-	jr nz, .wait2
-
-	ld a, c
-	ld hl, hTilesPerCycle
-	sub [hl]
-	ld c, a
-	jr .loop
+SourceVRAM:
+	ld b, b
+	ret
 
 Request1bpp::
 ; Load 1bpp at b:de to occupy c tiles of hl.
+	ld a, h
+	sub a, $80
+	cp a, $20
+	call nc, NotVRAM
+	ld a, d
+	sub a, $80
+	cp a, $20
+	call c, SourceVRAM
+
 	ldh a, [hBGMapMode]
 	push af
 	xor a
@@ -352,9 +413,19 @@ Get2bpp::
 	ldh a, [rLCDC]
 	bit rLCDC_ENABLE, a
 	jp nz, Request2bpp
+	
 	; fallthrough
 
 Copy2bpp:
+	ld a, h
+	sub a, $80
+	cp a, $20
+	call nc, NotVRAM
+	ld a, d
+	sub a, $80
+	cp a, $20
+	call c, SourceVRAM
+
 	push hl
 	ld h, d
 	ld l, e
@@ -384,6 +455,15 @@ Get1bpp::
 	; fallthrough
 
 Copy1bpp::
+	ld a, h
+	sub a, $80
+	cp a, $20
+	call nc, NotVRAM
+	ld a, d
+	sub a, $80
+	cp a, $20
+	call c, SourceVRAM
+
 	push de
 	ld d, h
 	ld e, l

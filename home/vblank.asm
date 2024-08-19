@@ -81,15 +81,18 @@ VBlank0::
 	; There's only time to call one of these in one vblank.
 	; Calls are in order of priority.
 
+	
 	call UpdateBGMapBuffer
 	jr c, .done
 	call UpdatePalsIfCGB
 	jr c, .done
 	call UpdateBGMap
-
+	jr c, .done
+	call TickAnimations
+	
 	; These have their own timing checks.
 
-	call Serve2bppRequest
+	; call Serve2bppRequest
 	call Serve1bppRequest
 	call AnimateTileset
 

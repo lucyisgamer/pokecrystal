@@ -399,7 +399,7 @@ Printer_Convert2RowsTo2bpp:
 	ld d, a
 	; copy 1 vtile to hl
 	lb bc, BANK(Printer_Convert2RowsTo2bpp), 1
-	call Request2bpp
+	call Request2bpp ; potential non-vram destination
 	pop hl
 	ld de, 1 tiles
 	add hl, de

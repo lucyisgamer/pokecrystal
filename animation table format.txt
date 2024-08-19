@@ -1,0 +1,4 @@
+Tables store a 16 bit frame ID and 16 bit tile pointer, with the top two bits of the pointer being bank bits
+Frame id $FFFF signals end of table, the pointer to follow is the start of the table
+Since the first frame ID is always $0000, it is instead used as the modulus for the table
+The last animation frame always lasts for only 1 frame, so it may need to be duplicated

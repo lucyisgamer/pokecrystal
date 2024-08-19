@@ -66,11 +66,16 @@ Rollover::
     ld [de], a
     ret
 
-TickAnimatons::
+TickAnimations::
+    ret ; dummy this out for now
+    ldh a, [rHDMA5]
+	and a, $80
+    ret z ; shit! we have an ongoing DMA transfer! abort!
+
     ld h, HIGH(rHDMA1)
     ld de, sTileAnimationTables
     ld c, LOW(rVBK)
-    ld b, $00
+    ld b, $01
 .loop
     ld l, LOW(rHDMA1)
     ld a, [de] ; load source high
@@ -86,28 +91,7 @@ TickAnimatons::
     inc e
     ld [hli], a ; write destination high
     ld [hli], a ; write destination low
-    ld [hl], b ; start transfer
-    ; dec b
-    ; jr nz, .loop
+    ld [hl], $00 ; start transfer
+    dec b
+    jr nz, .loop
     ret
-
-    ld hl, rHDMA1
-    ld sp, sTileAnimationTablesEnd
-    ld c, LOW(rVBK)
-    ld b, $00
-; .loop
-    ld l, LOW(rHDMA1)
-    pop de
-    ld a, d
-    ld [hli], a ; source high
-    ld a, e
-    ld [hli], a ; source low
-    ldh [c], a
-    pop de
-    ld a, d
-    ld [hli], a ; destination high
-    ld a, e
-    ld [hli], a ; destination low
-    ; ld a, e ; $00 (start DMA)
-    ld [hl], b 
-

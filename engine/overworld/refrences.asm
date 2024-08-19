@@ -527,7 +527,7 @@ if DEF(_DEBUG) ; if we're in debug mode alert if we run out of tile slots
     ld b, b
     stop
 else
-    jr nz, .newLoop ; if not, don't bother bounds checking
+    jr .newLoop ; if not, don't bother bounds checking
 endc
 
 .animatedNew ; the tile isn't already in the LUT, insert it
@@ -669,6 +669,7 @@ PutCharblock:: ; assumes we're already in the correct banks!
     ld a, [de]
     and a, $0F
     sla a
+    
     add a, c ; bc now points to the high byte of our tile id
     ld c, a
     ld a, [bc]

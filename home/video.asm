@@ -244,6 +244,7 @@ endr
 	ldh a, [hSPBuffer + 1]
 	ld h, a
 	ld sp, hl
+	scf
 	ret
 
 Serve1bppRequest::
@@ -326,7 +327,6 @@ endr
 
 Serve2bppRequest::
 ; Only call during the first fifth of VBlank
-
 	ld a, [wRequested2bppSize]
 	and a
 	ret z
