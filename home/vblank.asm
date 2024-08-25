@@ -62,8 +62,6 @@ VBlank0::
 	ld hl, hVBlankCounter
 	inc [hl]
 
-	
-
 	ldh a, [hROMBank]
 	ldh [hROMBankBackup], a
 	ldh a, [hROMBankHigh]
@@ -88,13 +86,11 @@ VBlank0::
 	jr c, .done
 	call UpdateBGMap
 	jr c, .done
-	call TickAnimations
 	
 	; These have their own timing checks.
-
-	; call Serve2bppRequest
 	call Serve1bppRequest
-	call AnimateTileset
+	call TickAnimations
+	; call AnimateTileset
 
 .done
 

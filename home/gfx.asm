@@ -237,6 +237,7 @@ Request2bpp::
 	; let's try HDMA for a change
 
 	ld b, c
+	dec b
 .loop
 	ld c, LOW(rHDMA1)
 	ld a, d
@@ -280,52 +281,54 @@ Request2bpp::
 	pop af
 	jp Bankswitch
 
-; 	ld a, e
-; 	ld [wRequested2bppSource], a
-; 	ld a, d
-; 	ld [wRequested2bppSource + 1], a
-; 	ld a, l
-; 	ld [wRequested2bppDest], a
-; 	ld a, h
-; 	ld [wRequested2bppDest + 1], a
-; .loop
-; 	ld a, c
-; 	ld hl, hTilesPerCycle
-; 	cp [hl]
-; 	jr nc, .cycle
 
-; 	ld [wRequested2bppSize], a
-; .wait
-; 	call DelayFrame
-; 	ld a, [wRequested2bppSize]
-; 	and a
-; 	jr nz, .wait
+SafeRequest2bpp: ; DMG doesn't have HDMA, so we must utilize the old ways of copying
+	ld a, e
+	ld [wRequested2bppSource], a
+	ld a, d
+	ld [wRequested2bppSource + 1], a
+	ld a, l
+	ld [wRequested2bppDest], a
+	ld a, h
+	ld [wRequested2bppDest + 1], a
+.loop
+	ld a, c
+	ld hl, hTilesPerCycle
+	cp [hl]
+	jr nc, .cycle
 
-; 	pop af
-; 	ldh [hTilesPerCycle], a
+	ld [wRequested2bppSize], a
+.wait
+	call DelayFrame
+	ld a, [wRequested2bppSize]
+	and a
+	jr nz, .wait
 
-; 	pop af
-; 	rst Bankswitch
+	pop af
+	ldh [hTilesPerCycle], a
 
-; 	pop af
-; 	ldh [hBGMapMode], a
-; 	ret
+	pop af
+	rst Bankswitch
 
-; .cycle
-; 	ldh a, [hTilesPerCycle]
-; 	ld [wRequested2bppSize], a
+	pop af
+	ldh [hBGMapMode], a
+	ret
 
-; .wait2
-; 	call DelayFrame
-; 	ld a, [wRequested2bppSize]
-; 	and a
-; 	jr nz, .wait2
+.cycle
+	ldh a, [hTilesPerCycle]
+	ld [wRequested2bppSize], a
 
-; 	ld a, c
-; 	ld hl, hTilesPerCycle
-; 	sub [hl]
-; 	ld c, a
-; 	jr .loop
+.wait2
+	call DelayFrame
+	ld a, [wRequested2bppSize]
+	and a
+	jr nz, .wait2
+
+	ld a, c
+	ld hl, hTilesPerCycle
+	sub [hl]
+	ld c, a
+	jr .loop
 
 NotVRAM:
 	ld b, b

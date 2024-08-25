@@ -31,8 +31,8 @@ SplashScreen:
 	call ClearTilemap
 
 ; Stop here if not in GBC mode
-	farcall GBCOnlyScreen
 
+	farcall GBCOnlyScreen
 ; Play GameFreak logo animation
 	call GameFreakPresentsInit
 .joy_loop

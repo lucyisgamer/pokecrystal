@@ -57,6 +57,7 @@ GDMATile:: ; source in ad, destination in bc
     ld [hl], a
     ret
 
+
 Rollover::
     inc l
     ld a, [hli]
@@ -67,31 +68,46 @@ Rollover::
     ret
 
 TickAnimations::
-    ret ; dummy this out for now
+    ldh a, [hCGB] ; ensure the game doesn't crash if we're using a DMG
+    and a
+    ret z
+
     ldh a, [rHDMA5]
 	and a, $80
     ret z ; shit! we have an ongoing DMA transfer! abort!
+    ; normally i'd be worried about interrupts here, but vblank already disables interrupts
+    ldh a, [rVBK]
+    push af ; save our VBK
+    ld a, $01
+    ldh [rVBK], a
 
-    ld h, HIGH(rHDMA1)
+    ld [hSPBuffer], sp ; weirdly enough, this stores sp as little-endian. interesting.
+    ld sp, sTileAnimationTables ; time for some fun pop slides
+
+    ld a, HIGH(vTiles5 + $60 tiles) ; dma destionation registers keep their contents between transfers, so we only have to initialize once
+    ldh [rHDMA3], a
+    ld a, LOW(vTiles5 + $60 tiles)
+    ldh [rHDMA4], a
+
+    ld hl, rHDMA1
     ld de, sTileAnimationTables
-    ld c, LOW(rVBK)
-    ld b, $01
+    ld c, LOW(rHDMA5)
+    ld b, $20
 .loop
-    ld l, LOW(rHDMA1)
-    ld a, [de] ; load source high
-    inc e
+    pop de
+    ld a, d
     ld [hli], a ; write source high
-
-    ld a, [de] ; load source low
-    inc e
-    ld [hli], a ; write source low (bottom bit specifies destination VBK)
-    ldh [c], a ; write rVBK
-
-    ld a, [de] ; load destination high AND low (swapped)
-    inc e
-    ld [hli], a ; write destination high
-    ld [hli], a ; write destination low
-    ld [hl], $00 ; start transfer
+    ld a, e
+    ld [hld], a ; write source low
+    xor a
+    ldh [c], a ; start DMA
     dec b
     jr nz, .loop
-    ret
+    ldh a, [hSPBuffer]
+    ld l, a
+    ldh a, [hSPBuffer + 1]
+    ld h, a
+    ld sp, hl ; bring back the stack! NO
+    pop af
+    ldh [rVBK], a ; restore VBK
+    reti
