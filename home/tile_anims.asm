@@ -81,6 +81,12 @@ TickAnimations::
     ld a, $01
     ldh [rVBK], a
 
+    ldh a, [hSPBuffer]
+    ld h, a
+    ldh a, [hSPBuffer + 1]
+    ld l, a
+    push hl
+
     ld [hSPBuffer], sp ; weirdly enough, this stores sp as little-endian. interesting.
     ld sp, sTileAnimationTables ; time for some fun pop slides
 
@@ -108,6 +114,13 @@ TickAnimations::
     ldh a, [hSPBuffer + 1]
     ld h, a
     ld sp, hl ; bring back the stack! NO
+
+    pop hl ; bring back the old value for hSPBuffer
+    ld a, h ; maybe this will keep the pause menu from shitting itself
+    ldh [hSPBuffer], a
+    ld a, l
+    ldh [hSPBuffer], a
+
     pop af
     ldh [rVBK], a ; restore VBK
     reti
