@@ -72,6 +72,10 @@ TickAnimations::
     and a
     ret z
 
+    ldh a, [rLY]
+    cp a, 149
+    ret nc ; if we're too far in VBlank this will overrun into rendering and cause *problems*
+
     ldh a, [rHDMA5]
 	and a, $80
     ret z ; shit! we have an ongoing DMA transfer! abort!

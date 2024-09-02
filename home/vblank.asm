@@ -97,7 +97,9 @@ VBlank0::
 	ldh a, [hOAMUpdate]
 	and a
 	jr nz, .done_oam
+	di
 	call hTransferShadowOAM
+	ei
 .done_oam
 
 	; vblank-sensitive operations are done

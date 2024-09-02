@@ -208,7 +208,7 @@ LoadMapPartsOnSpawn::
 	ret
 
 ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coorectly set in the array
-	; this WILL lag the game, but it's only intended to be used if loading chunks normally won't work
+	; this is a stop-the-world process, so only do it if you really need to!
 	inc b
 	ld a, $01
 .search
@@ -231,10 +231,12 @@ ForceLoadChunk:: ; force the chunk in quadrant b to load. assumes coords are coo
 	pop af
 	jr z, .charblockLoop
 ReloadOWTiles:: ; fallthrough so I can reuse this functionality
+	ldh a, [rLY]
+	cp a, 140 ; TileDMA can take up to 4 lines to work
+	call nc, DelayFrame
 	call TileDMA
 	jr c, ReloadOWTiles
 	ret
-
 
 HandleMap:
 	call ResetOverworldDelay

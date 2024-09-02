@@ -275,6 +275,7 @@ Do2DMenuRTCJoypad:
 	call UpdateTimeAndPals
 	call Menu_WasButtonPressed
 	ret c
+	call DelayFrame ; maybe let's not wait in a spin loop
 	ld a, [w2DMenuFlags1]
 	bit 7, a
 	jr z, .loopRTC
